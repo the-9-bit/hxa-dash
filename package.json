@@ -1,0 +1,14 @@
+{
+  "name": "hxa-dash",
+  "version": "0.1.0",
+  "description": "HxA Dash — Agent Team Information Panel",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "ws": "^8.16.0"
+  }
+}

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HxA Dash — Agent 团队面板</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1>HxA Dash</h1>
+      <span class="subtitle">Agent 团队面板</span>
+    </div>
+    <div class="header-right">
+      <span id="ws-status" class="status-badge disconnected">断开</span>
+      <span id="last-update" class="last-update"></span>
+      <button id="refresh-btn" class="btn-refresh" title="手动刷新">⟳</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Layer 1: Agent Card Wall -->
+    <section id="card-wall" class="section">
+      <div class="section-header">
+        <h2>Agent 团队</h2>
+        <span id="team-stats" class="team-stats"></span>
+      </div>
+      <div id="agent-cards" class="card-grid"></div>
+    </section>
+
+    <!-- Agent Detail Drawer -->
+    <div id="detail-drawer" class="drawer hidden">
+      <div class="drawer-overlay"></div>
+      <div class="drawer-content">
+        <button class="drawer-close">&times;</button>
+        <div id="drawer-body"></div>
+      </div>
+    </div>
+
+    <!-- Collaboration Graph -->
+    <section id="collab-section" class="section">
+      <div class="section-header">
+        <h2>协作关系</h2>
+      </div>
+      <div class="graph-container">
+        <canvas id="collab-canvas"></canvas>
+      </div>
+    </section>
+
+    <!-- Layer 3: Task Board + Timeline (side by side) -->
+    <div class="bottom-row">
+      <section id="board-section" class="section flex-1">
+        <div class="section-header">
+          <h2>任务看板</h2>
+        </div>
+        <div id="task-board" class="board">
+          <div class="board-col" data-state="todo">
+            <h3>待办 <span class="count" id="todo-count">0</span></h3>
+            <div class="board-list" id="todo-list"></div>
+          </div>
+          <div class="board-col" data-state="doing">
+            <h3>进行中 <span class="count" id="doing-count">0</span></h3>
+            <div class="board-list" id="doing-list"></div>
+          </div>
+          <div class="board-col" data-state="done">
+            <h3>已完成 <span class="count" id="done-count">0</span></h3>
+            <div class="board-list" id="done-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="timeline-section" class="section flex-1">
+        <div class="section-header">
+          <h2>工作时间线</h2>
+        </div>
+        <div id="timeline" class="timeline-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/lib/force-graph.js"></script>
+  <script src="js/components/card-wall.js"></script>
+  <script src="js/components/detail-drawer.js"></script>
+  <script src="js/components/collab-graph.js"></script>
+  <script src="js/components/task-board.js"></script>
+  <script src="js/components/timeline.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
