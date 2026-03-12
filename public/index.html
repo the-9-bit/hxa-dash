@@ -10,7 +10,13 @@
   <header>
     <div class="header-left">
       <h1>HxA Dash</h1>
-      <span class="subtitle">Agent 团队面板</span>
+      <nav id="main-nav">
+        <a href="#overview" class="nav-item active" data-page="overview">Overview</a>
+        <a href="#team" class="nav-item" data-page="team">团队</a>
+        <a href="#collab" class="nav-item" data-page="collab">协作</a>
+        <a href="#tasks" class="nav-item" data-page="tasks">任务</a>
+        <a href="#timeline" class="nav-item" data-page="timeline">时间轴</a>
+      </nav>
     </div>
     <div class="header-right">
       <span id="ws-status" class="status-badge disconnected">断开</span>
@@ -20,14 +26,172 @@
   </header>
 
   <main>
-    <!-- Layer 1: Agent Card Wall -->
-    <section id="card-wall" class="section">
-      <div class="section-header">
-        <h2>Agent 团队</h2>
-        <span id="team-stats" class="team-stats"></span>
+    <!-- Page: Overview -->
+    <div id="page-overview" class="page active">
+      <!-- Agent Set Selector -->
+      <div class="filter-bar">
+        <span class="filter-label">Agent 集合</span>
+        <button id="overview-select-agents" class="btn-filter">选择 Agent…</button>
+        <span id="overview-agent-count" class="filter-count"></span>
+        <button id="overview-clear-filter" class="btn-clear-filter" style="display:none">清除筛选</button>
       </div>
-      <div id="agent-cards" class="card-grid"></div>
-    </section>
+
+      <!-- Mini Agent Cards -->
+      <section class="section">
+        <div class="section-header">
+          <h2>Agent 状态</h2>
+          <span id="overview-team-stats" class="team-stats"></span>
+        </div>
+        <div id="overview-agent-cards" class="card-grid"></div>
+      </section>
+
+      <!-- Collab Graph (mini) -->
+      <section class="section">
+        <div class="section-header">
+          <h2>协作关系</h2>
+        </div>
+        <div class="graph-container" style="height: 300px;">
+          <canvas id="overview-collab-canvas"></canvas>
+          <div class="graph-legend">
+            <span class="legend-item"><span class="legend-line" style="background:var(--purple)"></span> Code Review</span>
+            <span class="legend-item"><span class="legend-line" style="background:var(--green)"></span> Issue 协作</span>
+            <span class="legend-item"><span class="legend-line" style="background:var(--accent)"></span> 同项目</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Work Panel (tasks + timeline side by side) -->
+      <div class="bottom-row">
+        <section class="section flex-1">
+          <div class="section-header">
+            <h2>任务看板</h2>
+          </div>
+          <div id="overview-task-board" class="board">
+            <div class="board-col" data-state="todo">
+              <h3>待办 <span class="count" id="overview-todo-count">0</span></h3>
+              <div class="board-list" id="overview-todo-list"></div>
+            </div>
+            <div class="board-col" data-state="doing">
+              <h3>进行中 <span class="count" id="overview-doing-count">0</span></h3>
+              <div class="board-list" id="overview-doing-list"></div>
+            </div>
+            <div class="board-col" data-state="done">
+              <h3>已完成 <span class="count" id="overview-done-count">0</span></h3>
+              <div class="board-list" id="overview-done-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section flex-1">
+          <div class="section-header">
+            <h2>最近活动</h2>
+          </div>
+          <div id="overview-timeline" class="timeline-list"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Page: Team -->
+    <div id="page-team" class="page">
+      <section class="section">
+        <div class="section-header">
+          <h2>组织 Agent 列表</h2>
+          <div class="section-tools">
+            <input type="text" id="team-search" class="search-input" placeholder="搜索 Agent…">
+            <select id="team-status-filter" class="select-filter">
+              <option value="all">全部状态</option>
+              <option value="online">在线</option>
+              <option value="offline">离线</option>
+            </select>
+          </div>
+        </div>
+        <span id="team-stats" class="team-stats"></span>
+        <div id="team-agent-cards" class="card-grid card-grid-wide"></div>
+      </section>
+    </div>
+
+    <!-- Page: Collab -->
+    <div id="page-collab" class="page">
+      <div class="collab-layout">
+        <!-- Left: Agent Selector -->
+        <div class="collab-sidebar">
+          <div class="sidebar-header">
+            <h3>选择 Agent</h3>
+            <div class="sidebar-actions">
+              <button id="collab-select-all" class="btn-sm">全选</button>
+              <button id="collab-clear-all" class="btn-sm">清空</button>
+            </div>
+          </div>
+          <div id="collab-agent-list" class="agent-checklist"></div>
+        </div>
+
+        <!-- Right: Graph -->
+        <div class="collab-main">
+          <div class="section-header">
+            <h2>协作关系图</h2>
+            <span id="collab-edge-count" class="team-stats"></span>
+          </div>
+          <div class="graph-container graph-container-large">
+            <canvas id="collab-canvas"></canvas>
+            <div class="graph-legend">
+              <span class="legend-item"><span class="legend-line" style="background:var(--purple)"></span> Code Review</span>
+              <span class="legend-item"><span class="legend-line" style="background:var(--green)"></span> Issue 协作</span>
+              <span class="legend-item"><span class="legend-line" style="background:var(--accent)"></span> 同项目</span>
+              <span class="legend-item"><span class="legend-dot online"></span> 在线</span>
+              <span class="legend-item"><span class="legend-dot offline"></span> 离线</span>
+            </div>
+            <div class="graph-help">提示：拖拽节点可调整位置，悬停显示详情，线条粗细表示协作频次</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Tasks -->
+    <div id="page-tasks" class="page">
+      <div class="filter-bar">
+        <span class="filter-label">筛选 Agent</span>
+        <button id="tasks-select-agents" class="btn-filter">选择 Agent…</button>
+        <span id="tasks-agent-count" class="filter-count"></span>
+        <button id="tasks-clear-filter" class="btn-clear-filter" style="display:none">清除筛选</button>
+      </div>
+      <section class="section">
+        <div class="section-header">
+          <h2>任务看板</h2>
+          <span id="tasks-total" class="team-stats"></span>
+        </div>
+        <div id="task-board" class="board board-full">
+          <div class="board-col" data-state="todo">
+            <h3>待办 <span class="count" id="todo-count">0</span></h3>
+            <div class="board-list board-list-tall" id="todo-list"></div>
+          </div>
+          <div class="board-col" data-state="doing">
+            <h3>进行中 <span class="count" id="doing-count">0</span></h3>
+            <div class="board-list board-list-tall" id="doing-list"></div>
+          </div>
+          <div class="board-col" data-state="done">
+            <h3>已完成 <span class="count" id="done-count">0</span></h3>
+            <div class="board-list board-list-tall" id="done-list"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Page: Timeline -->
+    <div id="page-timeline" class="page">
+      <div class="filter-bar">
+        <span class="filter-label">筛选 Agent</span>
+        <button id="timeline-select-agents" class="btn-filter">选择 Agent…</button>
+        <span id="timeline-agent-count" class="filter-count"></span>
+        <button id="timeline-clear-filter" class="btn-clear-filter" style="display:none">清除筛选</button>
+      </div>
+      <section class="section">
+        <div class="section-header">
+          <h2>工作时间线</h2>
+          <span id="timeline-total" class="team-stats"></span>
+        </div>
+        <div id="timeline" class="timeline-list timeline-list-tall"></div>
+      </section>
+    </div>
 
     <!-- Agent Detail Drawer -->
     <div id="detail-drawer" class="drawer hidden">
@@ -38,44 +202,24 @@
       </div>
     </div>
 
-    <!-- Collaboration Graph -->
-    <section id="collab-section" class="section">
-      <div class="section-header">
-        <h2>协作关系</h2>
+    <!-- Agent Selector Modal -->
+    <div id="agent-selector-modal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>选择 Agent</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-actions">
+          <button id="modal-select-all" class="btn-sm">全选</button>
+          <button id="modal-clear-all" class="btn-sm">清空</button>
+        </div>
+        <div id="modal-agent-list" class="agent-checklist"></div>
+        <div class="modal-footer">
+          <button id="modal-cancel" class="btn-secondary">取消</button>
+          <button id="modal-apply" class="btn-primary">确定</button>
+        </div>
       </div>
-      <div class="graph-container">
-        <canvas id="collab-canvas"></canvas>
-      </div>
-    </section>
-
-    <!-- Layer 3: Task Board + Timeline (side by side) -->
-    <div class="bottom-row">
-      <section id="board-section" class="section flex-1">
-        <div class="section-header">
-          <h2>任务看板</h2>
-        </div>
-        <div id="task-board" class="board">
-          <div class="board-col" data-state="todo">
-            <h3>待办 <span class="count" id="todo-count">0</span></h3>
-            <div class="board-list" id="todo-list"></div>
-          </div>
-          <div class="board-col" data-state="doing">
-            <h3>进行中 <span class="count" id="doing-count">0</span></h3>
-            <div class="board-list" id="doing-list"></div>
-          </div>
-          <div class="board-col" data-state="done">
-            <h3>已完成 <span class="count" id="done-count">0</span></h3>
-            <div class="board-list" id="done-list"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="timeline-section" class="section flex-1">
-        <div class="section-header">
-          <h2>工作时间线</h2>
-        </div>
-        <div id="timeline" class="timeline-list"></div>
-      </section>
     </div>
   </main>
 
@@ -85,6 +229,7 @@
   <script src="js/components/collab-graph.js"></script>
   <script src="js/components/task-board.js"></script>
   <script src="js/components/timeline.js"></script>
+  <script src="js/components/agent-filter.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

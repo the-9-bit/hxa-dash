@@ -213,11 +213,33 @@ class ForceGraph {
       }
     }
 
+    // Edge labels on hover
+    if (this.hovering) {
+      for (const e of this.edges) {
+        if (e.sourceNode === this.hovering || e.targetNode === this.hovering) {
+          const midX = (e.sourceNode.x + e.targetNode.x) / 2;
+          const midY = (e.sourceNode.y + e.targetNode.y) / 2;
+          const typeLabels = { review: 'Review', issue: 'Issue协作', project: '同项目' };
+          const label = `${typeLabels[e.type] || e.type} (${e.weight}x)`;
+          ctx.font = '10px -apple-system, sans-serif';
+          ctx.fillStyle = 'rgba(22,27,34,.85)';
+          const tw = ctx.measureText(label).width + 8;
+          ctx.fillRect(midX - tw/2, midY - 8, tw, 16);
+          ctx.fillStyle = '#e6edf3';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, midX, midY);
+        }
+      }
+    }
+
     // Tooltip for hovered node
     if (this.hovering) {
       const n = this.hovering;
       const s = n.stats || {};
-      const text = `${n.name}: ${s.open_count || 0} 进行中, ${s.closed_count || 0} 已完成`;
+      const connectedEdges = this.edges.filter(e => e.sourceNode === n || e.targetNode === n);
+      const partners = connectedEdges.length;
+      const text = `${n.name}${n.role ? ' (' + n.role + ')' : ''}: ${s.open_count || 0} 进行中, ${s.closed_count || 0} 已完成, ${partners} 协作伙伴`;
       ctx.fillStyle = 'rgba(22,27,34,.9)';
       ctx.font = '11px -apple-system, sans-serif';
       const tw = ctx.measureText(text).width + 16;

@@ -27,16 +27,21 @@ const upsertTask = (task) => {
 
 const getTasksByState = () => {
   const all = [...store.tasks.values()].sort((a, b) => b.updated_at - a.updated_at);
+  const opened = all.filter(t => t.state === 'opened');
+  // "doing" = has assignee OR has activity in last 7 days with author
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const doing = opened.filter(t => t.assignee || (t.author && t.updated_at > sevenDaysAgo));
+  const doingIds = new Set(doing.map(t => t.id));
   return {
-    todo: all.filter(t => t.state === 'opened' && !t.assignee),
-    doing: all.filter(t => t.state === 'opened' && t.assignee),
+    todo: opened.filter(t => !doingIds.has(t.id)),
+    doing,
     done: all.filter(t => t.state === 'closed' || t.state === 'merged')
   };
 };
 
 const getTasksForAgent = (name) => {
   return [...store.tasks.values()]
-    .filter(t => t.assignee === name)
+    .filter(t => t.assignee === name || t.author === name || (t.reviewer && t.reviewer.split(',').includes(name)))
     .sort((a, b) => b.updated_at - a.updated_at);
 };
 

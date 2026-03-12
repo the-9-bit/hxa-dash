@@ -44,7 +44,9 @@ async function fetchIssues() {
     const changes = [];
 
     for (const issue of issues) {
-      const assignee = issue.assignee ? mapUsername(issue.assignee.username) : null;
+      // Use assignees array (preferred) or fallback to singular assignee
+      const assignees = (issue.assignees || []).map(a => mapUsername(a.username));
+      const assignee = assignees[0] || (issue.assignee ? mapUsername(issue.assignee.username) : null);
       const task = {
         id: `issue-${issue.project_id}-${issue.iid}`,
         type: 'issue',
@@ -52,6 +54,7 @@ async function fetchIssues() {
         title: issue.title,
         state: issue.state,
         assignee: assignee,
+        author: issue.author ? mapUsername(issue.author.username) : null,
         reviewer: null,
         url: issue.web_url,
         labels: JSON.stringify(issue.labels || []),
@@ -74,7 +77,8 @@ async function fetchMRs() {
     const changes = [];
 
     for (const mr of mrs) {
-      const assignee = mr.assignee ? mapUsername(mr.assignee.username) : null;
+      const mrAssignees = (mr.assignees || []).map(a => mapUsername(a.username));
+      const assignee = mrAssignees[0] || (mr.assignee ? mapUsername(mr.assignee.username) : null);
       const reviewers = (mr.reviewers || []).map(r => mapUsername(r.username));
       const task = {
         id: `mr-${mr.project_id}-${mr.iid}`,
@@ -101,44 +105,48 @@ async function fetchMRs() {
 
 async function fetchEvents() {
   try {
-    // Fetch recent events from user-level events API (covers all projects)
-    const events = await apiFetch(`/events?per_page=100`);
+    // Fetch projects in the group first, then get events from each project
+    // This ensures we get ALL users' events, not just the token owner's
+    const projects = await apiFetch(`/groups/${config.group_id}/projects?per_page=100&simple=true`);
     const newEvents = [];
+    const seenEventKeys = new Set();
 
-    for (const event of events) {
-      const agent = event.author ? mapUsername(event.author.username) : 'unknown';
-      let action = event.action_name || 'unknown';
-      let targetType = event.target_type ? event.target_type.toLowerCase() : (event.push_data ? 'push' : 'unknown');
-      let targetTitle = event.target_title || (event.push_data ? `${event.push_data.commit_count} commit(s) to ${event.push_data.ref}` : '');
-      let project = '';
+    for (const proj of projects) {
+      // Cache project name
+      projectNameCache.set(proj.id, proj.name || proj.path);
 
-      // Resolve project name from cache or API
-      if (event.project_id) {
-        if (projectNameCache.has(event.project_id)) {
-          project = projectNameCache.get(event.project_id);
-        } else {
-          try {
-            const p = await apiFetch(`/projects/${event.project_id}?simple=true`);
-            project = p.name || p.path || `project-${event.project_id}`;
-            projectNameCache.set(event.project_id, project);
-          } catch {
-            project = `project-${event.project_id}`;
-          }
-        }
+      let projectEvents;
+      try {
+        projectEvents = await apiFetch(`/projects/${proj.id}/events?per_page=50`);
+      } catch {
+        continue; // skip projects we can't access
       }
 
-      const evt = {
-        timestamp: new Date(event.created_at).getTime(),
-        agent,
-        action,
-        target_type: targetType,
-        target_title: targetTitle,
-        project,
-        url: event.target_url || '',
-        is_collab: 0
-      };
-      db.insertEvent(evt);
-      newEvents.push(evt);
+      for (const event of projectEvents) {
+        const agent = event.author ? mapUsername(event.author.username) : 'unknown';
+        let action = event.action_name || 'unknown';
+        let targetType = event.target_type ? event.target_type.toLowerCase() : (event.push_data ? 'push' : 'unknown');
+        let targetTitle = event.target_title || (event.push_data ? `${event.push_data.commit_count} commit(s) to ${event.push_data.ref}` : '');
+        const project = projectNameCache.get(event.project_id) || proj.name || `project-${event.project_id}`;
+
+        // Deduplicate events across projects
+        const eventKey = `${event.created_at}-${agent}-${action}-${targetType}-${targetTitle}`;
+        if (seenEventKeys.has(eventKey)) continue;
+        seenEventKeys.add(eventKey);
+
+        const evt = {
+          timestamp: new Date(event.created_at).getTime(),
+          agent,
+          action,
+          target_type: targetType,
+          target_title: targetTitle,
+          project,
+          url: event.target_url || '',
+          is_collab: 0
+        };
+        db.insertEvent(evt);
+        newEvents.push(evt);
+      }
     }
     return newEvents;
   } catch (err) {
