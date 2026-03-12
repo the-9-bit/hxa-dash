@@ -4,9 +4,9 @@ const collab = require('../analyzers/collab');
 
 const router = Router();
 
-// GET /api/team — all agents + stats
-router.get('/', (req, res) => {
-  const agents = db.getAllAgents().map(a => {
+// Build enriched agent list — shared between REST and WS broadcasts
+function buildAgents() {
+  return db.getAllAgents().map(a => {
     // Assignee-only tasks for status/current work (don't show authored/reviewed tasks as "my work")
     const assignedTasks = db.getTasksForAgent(a.name, { assigneeOnly: true });
     const openTasks = assignedTasks.filter(t => t.state === 'opened');
@@ -65,6 +65,11 @@ router.get('/', (req, res) => {
       }
     };
   });
+}
+
+// GET /api/team — all agents + stats
+router.get('/', (req, res) => {
+  const agents = buildAgents();
 
   const online = agents.filter(a => a.online).length;
   res.json({
@@ -110,3 +115,4 @@ function safeJSON(str) {
 }
 
 module.exports = router;
+module.exports.buildAgents = buildAgents;

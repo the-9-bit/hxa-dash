@@ -10,7 +10,9 @@ const gitlabFetcher = require('./fetchers/gitlab');
 const collab = require('./analyzers/collab');
 
 const teamRoutes = require('./routes/team');
+const { buildAgents } = teamRoutes;
 const boardRoutes = require('./routes/board');
+const { buildBoard } = boardRoutes;
 const timelineRoutes = require('./routes/timeline');
 const reportRoutes = require('./routes/report');
 
@@ -88,8 +90,8 @@ reportRoutes.init(ws, config);
 
 // Init WebSocket with snapshot provider
 ws.init(server, () => ({
-  team: db.getAllAgents(),
-  board: db.getTasksByState(),
+  team: buildAgents(),
+  board: buildBoard(),
   timeline: db.getTimeline(50),
   graph: collab.getGraph()
 }));
@@ -111,8 +113,8 @@ async function pollAll() {
 
     // Build full snapshot
     const snapshot = {
-      team: agents,
-      board: db.getTasksByState(),
+      team: buildAgents(),
+      board: buildBoard(),
       timeline: db.getTimeline(50),
       graph
     };
@@ -135,8 +137,8 @@ async function startPolling() {
 
   // Send snapshot to any early-connecting clients
   const snapshot = {
-    team: db.getAllAgents(),
-    board: db.getTasksByState(),
+    team: buildAgents(),
+    board: buildBoard(),
     timeline: db.getTimeline(50),
     graph: collab.getGraph()
   };
@@ -145,7 +147,7 @@ async function startPolling() {
   // Connect polling (30s) — always broadcast so clients stay in sync (#40)
   setInterval(async () => {
     await connectFetcher.fetchAgents();
-    ws.broadcast('team:update', db.getAllAgents());
+    ws.broadcast('team:update', buildAgents());
   }, config.polling?.connect_interval_ms || 30000);
 
   // GitLab polling (60s)
@@ -154,8 +156,8 @@ async function startPolling() {
     const graph = collab.analyze();
 
     // Always broadcast all data channels so manual refresh button is never needed (#40)
-    ws.broadcast('board:update', db.getTasksByState());
-    ws.broadcast('timeline:new', db.getTimeline(20));
+    ws.broadcast('board:update', buildBoard());
+    ws.broadcast('timeline:new', db.getTimeline(50));
     ws.broadcast('graph:update', graph);
   }, config.polling?.gitlab_interval_ms || 60000);
 }
