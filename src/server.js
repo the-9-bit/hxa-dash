@@ -12,6 +12,7 @@ const collab = require('./analyzers/collab');
 const teamRoutes = require('./routes/team');
 const boardRoutes = require('./routes/board');
 const timelineRoutes = require('./routes/timeline');
+const reportRoutes = require('./routes/report');
 
 const PORT = process.env.PORT || 3479;
 
@@ -37,6 +38,9 @@ gitlabFetcher.init(config);
 const app = express();
 const server = http.createServer(app);
 
+// Body parsing (needed for webhook/report endpoints)
+app.use(express.json({ limit: '1mb' }));
+
 // Serve static files
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -44,6 +48,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/api/team', teamRoutes);
 app.use('/api/board', boardRoutes);
 app.use('/api/timeline', timelineRoutes);
+app.use('/api', reportRoutes.router);
 
 // Graph endpoint
 app.get('/api/graph', (req, res) => {
@@ -59,6 +64,9 @@ app.get('/api/health', (req, res) => {
     timestamp: Date.now()
   });
 });
+
+// Init report routes (needs ws + config)
+reportRoutes.init(ws, config);
 
 // Init WebSocket with snapshot provider
 ws.init(server, () => ({
