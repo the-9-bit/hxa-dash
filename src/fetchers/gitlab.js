@@ -1,18 +1,18 @@
 const https = require('https');
 const http = require('http');
 const db = require('../db');
+const entity = require('../entity');
 
 let config = null;
-let usernameMap = {};
 const projectNameCache = new Map(); // project_id -> name
 
 function init(cfg) {
   config = cfg.gitlab;
-  usernameMap = config.username_map || {};
 }
 
 function mapUsername(gitlabUsername) {
-  return usernameMap[gitlabUsername] || gitlabUsername;
+  // Resolve GitLab username to canonical entity ID
+  return entity.resolve('gitlab', gitlabUsername);
 }
 
 async function apiFetch(endpoint) {

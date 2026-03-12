@@ -1,6 +1,7 @@
 const https = require('https');
 const http = require('http');
 const db = require('../db');
+const entity = require('../entity');
 
 let config = null;
 
@@ -38,6 +39,9 @@ async function fetchAgents() {
     const changes = [];
 
     for (const bot of bots) {
+      // Ensure entity exists for this Connect bot
+      entity.ensureFromConnect(bot.name);
+
       const prev = db.getAgent(bot.name);
       const agent = {
         name: bot.name,

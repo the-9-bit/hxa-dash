@@ -23,6 +23,12 @@ if (!fs.existsSync(configPath)) {
 }
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
+// Init entity layer
+const entity = require('./entity');
+if (config.entities) {
+  entity.loadFromConfig(config.entities);
+}
+
 // Init fetchers
 connectFetcher.init(config);
 gitlabFetcher.init(config);
