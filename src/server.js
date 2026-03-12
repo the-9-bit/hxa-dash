@@ -26,6 +26,13 @@ const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 // Init entity layer
 const entity = require('./entity');
+// Load from dedicated entities.json first (committed, non-sensitive)
+const entitiesPath = path.join(__dirname, '..', 'config', 'entities.json');
+if (fs.existsSync(entitiesPath)) {
+  const entitiesConfig = JSON.parse(fs.readFileSync(entitiesPath, 'utf8'));
+  entity.loadFromConfig(entitiesConfig.entities || []);
+}
+// sources.json entities override/extend (for local overrides)
 if (config.entities) {
   entity.loadFromConfig(config.entities);
 }
