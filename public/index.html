@@ -45,29 +45,7 @@
         <div id="overview-agent-cards" class="card-grid"></div>
       </section>
 
-      <!-- Collab Graph (mini) -->
-      <section class="section">
-        <div class="section-header">
-          <h2>协作关系</h2>
-        </div>
-        <div class="graph-container" style="height: 300px;">
-          <canvas id="overview-collab-canvas"></canvas>
-          <div id="overview-collab-empty" class="graph-empty hidden">暂无协作数据</div>
-          <div class="graph-legend">
-            <span class="legend-separator">连线类型</span>
-            <span class="legend-item"><span class="legend-line" style="background:var(--purple)"></span> Code Review</span>
-            <span class="legend-item"><span class="legend-line" style="background:var(--green)"></span> Issue 协作</span>
-            <span class="legend-item"><span class="legend-line" style="background:var(--accent)"></span> 同项目</span>
-            <span class="legend-separator">节点</span>
-            <span class="legend-item"><span class="legend-dot online"></span> 在线</span>
-            <span class="legend-item"><span class="legend-dot offline"></span> 离线</span>
-            <span class="legend-item"><span class="legend-size-hint"></span> 大小 = 任务量</span>
-          </div>
-          <div class="graph-help">拖拽节点调整位置 · 悬停查看详情 · 线粗 = 协作频次</div>
-        </div>
-      </section>
-
-      <!-- Work Panel (tasks + timeline side by side) -->
+      <!-- Work Panel (tasks + timeline side by side) — moved above collab per #31 -->
       <div class="bottom-row">
         <section class="section flex-1">
           <div class="section-header">
@@ -96,6 +74,28 @@
           <div id="overview-timeline" class="timeline-list"></div>
         </section>
       </div>
+
+      <!-- Collab Graph (mini) -->
+      <section class="section">
+        <div class="section-header">
+          <h2>协作关系</h2>
+        </div>
+        <div class="graph-container" style="height: 300px;">
+          <canvas id="overview-collab-canvas"></canvas>
+          <div id="overview-collab-empty" class="graph-empty hidden">暂无协作数据</div>
+          <div class="graph-legend">
+            <span class="legend-separator">连线类型</span>
+            <span class="legend-item"><span class="legend-line" style="background:var(--purple)"></span> Code Review</span>
+            <span class="legend-item"><span class="legend-line" style="background:var(--green)"></span> Issue 协作</span>
+            <span class="legend-item"><span class="legend-line" style="background:var(--accent)"></span> 同项目</span>
+            <span class="legend-separator">节点</span>
+            <span class="legend-item"><span class="legend-dot online"></span> 在线</span>
+            <span class="legend-item"><span class="legend-dot offline"></span> 离线</span>
+            <span class="legend-item"><span class="legend-size-hint"></span> 大小 = 任务量</span>
+          </div>
+          <div class="graph-help">拖拽节点调整位置 · 悬停查看详情 · 线粗 = 协作频次</div>
+        </div>
+      </section>
     </div>
 
     <!-- Page: Team -->
