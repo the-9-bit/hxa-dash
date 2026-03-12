@@ -185,7 +185,9 @@ function handlePush(payload, usernameMap, now) {
       target_title: commit.message?.split('\n')[0]?.slice(0, 100) || 'commit',
       target_url: commit.url || null,
       project,
-      timestamp: new Date(commit.timestamp).getTime() || now
+      timestamp: new Date(commit.timestamp).getTime() || now,
+      // external_id: stable per-commit ID for dedup against polling fetchEvents
+      external_id: commit.id ? 'commit:' + commit.id : null
     });
   }
 
@@ -232,7 +234,9 @@ function handleMR(payload, usernameMap, now) {
       target_title: mr.title || 'MR',
       target_url: mr.url || null,
       project,
-      timestamp: now
+      timestamp: now,
+      // external_id: matches polling fetchEvents external_id for same MR event
+      external_id: mr.id ? 'mr:' + mr.id + ':' + (action || 'update') : null
     });
   }
 
@@ -283,7 +287,9 @@ function handleIssue(payload, usernameMap, now) {
       target_title: issue.title || 'issue',
       target_url: issue.url || null,
       project,
-      timestamp: now
+      timestamp: now,
+      // external_id: matches polling fetchEvents external_id for same issue event
+      external_id: issue.id ? 'issue:' + issue.id + ':' + (action || 'update') : null
     });
   }
 
@@ -312,7 +318,9 @@ function handleNote(payload, usernameMap, now) {
     target_title: targetTitle.slice(0, 100),
     target_url: note.url || null,
     project,
-    timestamp: new Date(note.created_at).getTime() || now
+    timestamp: new Date(note.created_at).getTime() || now,
+    // external_id: matches polling fetchEvents external_id for same note event
+    external_id: note.id ? 'note:' + note.id : null
   });
 
   // Track collaboration with MR/issue author

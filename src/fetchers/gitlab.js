@@ -38,6 +38,22 @@ async function apiFetch(endpoint) {
   });
 }
 
+
+// Normalize GitLab Events API action_name to match webhook handler canonical actions.
+// Used for external_id construction — ensures webhook and polling produce matching IDs
+// for the same real-world event so insertEvent can deduplicate them.
+function normalizeGitLabAction(actionName) {
+  switch ((actionName || '').toLowerCase()) {
+    case 'opened':      return 'open';
+    case 'merged':      return 'merge';
+    case 'closed':      return 'close';
+    case 'reopened':    return 'reopen';
+    case 'approved':    return 'approved';
+    case 'commented on':return 'comment';
+    default:            return actionName || 'update';
+  }
+}
+
 async function fetchIssues() {
   try {
     const issues = await apiFetch(`/groups/${config.group_id}/issues?state=all&per_page=100&order_by=updated_at&sort=desc`);
@@ -134,6 +150,22 @@ async function fetchEvents() {
         if (seenEventKeys.has(eventKey)) continue;
         seenEventKeys.add(eventKey);
 
+        // Compute stable external_id for cross-source deduplication.
+        // These IDs match the external_id values set by the webhook handler in report.js,
+        // so an event inserted by webhook won't be duplicated when polling runs.
+        let externalId = null;
+        if (targetType === 'mergerequest' && event.target_id) {
+          externalId = 'mr:' + event.target_id + ':' + normalizeGitLabAction(event.action_name);
+        } else if (targetType === 'issue' && event.target_id) {
+          externalId = 'issue:' + event.target_id + ':' + normalizeGitLabAction(event.action_name);
+        } else if (targetType === 'note' && event.target_id) {
+          // Note events: event.target_id is the note ID
+          externalId = 'note:' + event.target_id;
+        } else if (event.push_data?.commit_to) {
+          // Push events: use HEAD commit SHA — matches webhook's per-commit external_id for the last commit
+          externalId = 'commit:' + event.push_data.commit_to;
+        }
+
         const evt = {
           timestamp: new Date(event.created_at).getTime(),
           agent,
@@ -142,7 +174,8 @@ async function fetchEvents() {
           target_title: targetTitle,
           project,
           url: event.target_url || '',
-          is_collab: 0
+          is_collab: 0,
+          external_id: externalId
         };
         db.insertEvent(evt);
         newEvents.push(evt);

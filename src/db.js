@@ -47,13 +47,17 @@ const getTasksForAgent = (name) => {
 
 // Event operations
 const insertEvent = (event) => {
-  // Dedup by timestamp + agent + action + target
-  const exists = store.events.some(e =>
-    e.timestamp === event.timestamp &&
-    e.agent === event.agent &&
-    e.action === event.action &&
-    e.target_title === event.target_title
-  );
+  const exists = store.events.some(e => {
+    // Primary dedup: external_id match when both events have one
+    // external_id is a stable string derived from GitLab object IDs (e.g. "mr:123:open", "note:456", "commit:abc")
+    // This correctly deduplicates events inserted by both the webhook handler and the polling fetcher.
+    if (event.external_id && e.external_id && event.external_id === e.external_id) return true;
+    // Fallback: timestamp + agent + action + title (for events without external_id)
+    return e.timestamp === event.timestamp &&
+      e.agent === event.agent &&
+      e.action === event.action &&
+      e.target_title === event.target_title;
+  });
   if (!exists) {
     store.events.push({ ...event });
     // Keep sorted desc, limit to 500
