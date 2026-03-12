@@ -17,7 +17,7 @@ const DetailDrawer = {
 
   async open(name) {
     try {
-      const res = await fetch(`/api/team/${encodeURIComponent(name)}`);
+      const res = await fetch(`${BASE}/api/team/${encodeURIComponent(name)}`);
       if (!res.ok) throw new Error('Not found');
       const data = await res.json();
       this.renderDetail(data);

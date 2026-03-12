@@ -1,4 +1,12 @@
 // HxA Dash — Main Application
+// Base path detection (works behind reverse proxy with path stripping)
+const BASE = (() => {
+  const path = location.pathname.replace(/\/$/, '');
+  // If served at /hxa-dash/, API calls go to /hxa-dash/api/...
+  // The reverse proxy strips the prefix, so the server sees /api/...
+  return path.includes('/hxa-dash') ? '/hxa-dash' : '';
+})();
+
 // Utility functions (used by components)
 function esc(str) {
   if (!str) return '';
@@ -53,10 +61,10 @@ const App = {
   async fetchAll() {
     try {
       const [teamRes, boardRes, timelineRes, graphRes] = await Promise.all([
-        fetch('/api/team'),
-        fetch('/api/board'),
-        fetch('/api/timeline'),
-        fetch('/api/graph')
+        fetch(`${BASE}/api/team`),
+        fetch(`${BASE}/api/board`),
+        fetch(`${BASE}/api/timeline`),
+        fetch(`${BASE}/api/graph`)
       ]);
 
       if (teamRes.ok) {
@@ -89,7 +97,7 @@ const App = {
 
   connectWS() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${proto}//${location.host}/ws`;
+    const wsUrl = `${proto}//${location.host}${BASE}/ws`;
 
     this.setStatus('connecting');
 
