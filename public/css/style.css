@@ -135,7 +135,7 @@ main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
 /* Card Wall */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 12px;
 }
 .card-grid-wide {
@@ -171,6 +171,31 @@ main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
 .agent-role { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
 .agent-bio { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
 
+/* Card Stats Row */
+.card-stats {
+  display: flex; gap: 10px; margin-top: 8px; padding-top: 8px;
+  border-top: 1px solid var(--border); flex-wrap: wrap;
+}
+.card-stat {
+  font-size: 11px; color: var(--text-secondary);
+  display: flex; align-items: center; gap: 2px;
+}
+
+/* Card Latest Activity */
+.card-latest-activity {
+  margin-top: 6px; padding: 6px 8px;
+  background: var(--bg); border-radius: 6px;
+  font-size: 11px; display: flex; gap: 4px; align-items: baseline;
+  overflow: hidden;
+}
+.activity-action { color: var(--accent); font-weight: 500; white-space: nowrap; }
+.activity-target {
+  color: var(--text-secondary); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;
+}
+.activity-time { color: var(--text-secondary); font-size: 10px; white-space: nowrap; opacity: .7; }
+
+/* Task Preview */
 .agent-tasks-preview {
   margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
   font-size: 12px; color: var(--text-secondary);
@@ -180,6 +205,7 @@ main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   padding: 2px 0;
 }
+.agent-tasks-preview .task-more { color: var(--accent); font-size: 11px; }
 
 /* Drawer */
 .drawer { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200; }

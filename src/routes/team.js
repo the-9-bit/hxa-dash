@@ -6,12 +6,33 @@ const router = Router();
 
 // GET /api/team — all agents + stats
 router.get('/', (req, res) => {
-  const agents = db.getAllAgents().map(a => ({
-    ...a,
-    tags: safeJSON(a.tags),
-    online: !!a.online,
-    current_tasks: db.getTasksForAgent(a.name).filter(t => t.state === 'opened').slice(0, 3)
-  }));
+  const agents = db.getAllAgents().map(a => {
+    const allTasks = db.getTasksForAgent(a.name);
+    const openTasks = allTasks.filter(t => t.state === 'opened');
+    const closedTasks = allTasks.filter(t => t.state === 'closed' || t.state === 'merged');
+    const recentEvents = db.getEventsForAgent(a.name, 5);
+    const latestEvent = recentEvents[0] || null;
+
+    return {
+      ...a,
+      tags: safeJSON(a.tags),
+      online: !!a.online,
+      current_tasks: openTasks.slice(0, 3),
+      latest_event: latestEvent ? {
+        action: latestEvent.action,
+        target_title: latestEvent.target_title,
+        timestamp: latestEvent.timestamp,
+        project: latestEvent.project
+      } : null,
+      stats: {
+        open_tasks: openTasks.length,
+        closed_tasks: closedTasks.length,
+        mr_count: allTasks.filter(t => t.type === 'mr').length,
+        issue_count: allTasks.filter(t => t.type === 'issue').length,
+        recent_events: recentEvents.length
+      }
+    };
+  });
 
   const online = agents.filter(a => a.online).length;
   res.json({
