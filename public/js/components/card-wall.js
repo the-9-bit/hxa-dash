@@ -184,8 +184,11 @@ const CardWall = {
       </div>
     ` : '';
 
+    const offlineBanner = !agent.online ? '<span class="offline-banner">离线</span>' : '';
+
     return `
       <div class="agent-card ${onlineClass}" data-name="${esc(agent.name)}">
+        ${offlineBanner}
         <div class="card-top">
           <div class="card-top-left">${healthHTML}${kindBadge}<span class="agent-name">${esc(agent.name)}</span></div>
           <span class="work-status-badge ${workStatus}" title="${workStatus}">${statusLabel}</span>

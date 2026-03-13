@@ -155,6 +155,32 @@ main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
   transform: translateY(-2px);
 }
 
+/* Offline agent card: dimmed + desaturated (#65) */
+.agent-card.offline {
+  opacity: 0.55;
+  filter: grayscale(40%);
+  border-color: var(--border);
+  position: relative;
+}
+.agent-card.offline:hover {
+  opacity: 0.8;
+  filter: grayscale(20%);
+  border-color: var(--text-secondary);
+}
+.agent-card.offline .offline-banner {
+  position: absolute;
+  top: 8px;
+  right: -6px;
+  background: #484f58;
+  color: #c9d1d9;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
 .agent-card .card-top {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 8px;
