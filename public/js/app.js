@@ -95,6 +95,7 @@ const App = {
     WorkloadReport.init();
     Suggestions.init();
     Metrics.init();
+    MyView.init();
 
     // Workload report: sortable headers + export
     document.querySelectorAll('.workload-table thead .sortable').forEach(th => {
@@ -183,7 +184,7 @@ const App = {
   },
 
   navigateTo(page, pushState = true) {
-    const validPages = ['overview', 'team', 'collab', 'tasks', 'timeline', 'report'];
+    const validPages = ['overview', 'team', 'collab', 'tasks', 'timeline', 'report', 'myview'];
     if (!validPages.includes(page)) page = 'overview';
 
     // Update nav
@@ -265,6 +266,7 @@ const App = {
     this.renderCollab();
     this.renderTasks();
     this.renderTimeline();
+    this.renderMyView();
   },
 
   renderCurrentPage() {
@@ -274,6 +276,7 @@ const App = {
       case 'collab': this.renderCollab(); break;
       case 'tasks': this.renderTasks(); break;
       case 'timeline': this.renderTimeline(); break;
+      case 'myview': this.renderMyView(); break;
     }
   },
 
@@ -374,6 +377,10 @@ const App = {
     if (totalEl) totalEl.textContent = `共 ${events.length} 条`;
 
     AgentFilter.updateCountDisplay('timeline');
+  },
+
+  renderMyView() {
+    MyView.populateAgents(this.data.team);
   },
 
   // --- Filter Helpers ---
@@ -530,6 +537,7 @@ const App = {
         this.data.board = msg.data;
         this.renderOverview();
         this.renderTasks();
+        if (this.currentPage === 'myview') MyView.fetchAndRender();
         break;
 
       case 'timeline:new':

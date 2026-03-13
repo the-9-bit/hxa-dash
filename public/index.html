@@ -19,6 +19,7 @@
         <a href="#tasks" class="nav-item" data-page="tasks">任务</a>
         <a href="#timeline" class="nav-item" data-page="timeline">时间轴</a>
         <a href="#report" class="nav-item" data-page="report">报表</a>
+        <a href="#myview" class="nav-item" data-page="myview">我的</a>
       </nav>
       <button id="nav-close-btn" aria-label="关闭菜单">×</button>
     </div>
@@ -338,6 +339,15 @@
       </section>
     </div>
 
+    <!-- Page: My View (#55) -->
+    <div id="page-myview" class="page">
+      <div class="filter-bar">
+        <span class="filter-label">身份</span>
+        <select id="myview-agent-select" class="select-filter"></select>
+      </div>
+      <div id="myview-content"></div>
+    </div>
+
     <!-- Agent Detail Drawer -->
     <div id="detail-drawer" class="drawer hidden">
       <div class="drawer-overlay"></div>
@@ -383,6 +393,7 @@
   <script src="js/components/weekly-report.js"></script>
   <script src="js/components/suggestions.js"></script>
   <script src="js/components/metrics.js"></script>
+  <script src="js/components/my-view.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
