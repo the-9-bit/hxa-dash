@@ -16,7 +16,6 @@ const CardWall = {
       s.closed_last_7d, s.closed_last_30d,
       (agent.capacity || {}).current, (agent.capacity || {}).max,
       agent.health_score,
-      agent.last_seen_at,
       (agent.latest_event || {}).target_title,
       (agent.active_projects || []).join('|'),
       (agent.tags || []).join('|'),
@@ -58,6 +57,7 @@ const CardWall = {
         el.innerHTML = this.cardHTML(agent);
         const card = el.firstElementChild;
         card.classList.add('card-enter');
+        card.addEventListener('animationend', () => card.classList.remove('card-enter'), { once: true });
         card.setAttribute('data-fp', fp);
         const ref = container.children[idx];
         container.insertBefore(card, ref || null);
