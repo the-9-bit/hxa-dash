@@ -20,6 +20,8 @@ const getAllAgents = () => {
 
 const getAgent = (name) => store.agents.get(name) || null;
 
+const removeAgent = (name) => store.agents.delete(name);
+
 // Task operations
 const upsertTask = (task) => {
   store.tasks.set(task.id, { ...task });
@@ -331,7 +333,7 @@ const getUnassignedIssues = () => {
 };
 
 module.exports = {
-  upsertAgent, getAllAgents, getAgent,
+  upsertAgent, getAllAgents, getAgent, removeAgent,
   upsertTask, getTasksByState, getTasksForAgent, getAllTasks, getTask,
   insertEvent, getTimeline, getEventsForAgent,
   upsertEdge, clearEdges, getCollabEdges, getCollabsForAgent, getTopCollaborator,

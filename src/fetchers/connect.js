@@ -39,12 +39,12 @@ async function fetchAgents() {
     const changes = [];
 
     for (const bot of bots) {
-      // Ensure entity exists for this Connect bot
-      entity.ensureFromConnect(bot.name);
+      // Only show team members registered in entities.json (#75)
+      const ent = entity.get(bot.name);
+      if (!ent) continue;
 
       // Use entity meta as fallback for missing role/bio
-      const ent = entity.get(bot.name);
-      const entMeta = ent?.meta || {};
+      const entMeta = ent.meta || {};
 
       const prev = db.getAgent(bot.name);
       const agent = {
@@ -62,6 +62,14 @@ async function fetchAgents() {
         changes.push(agent);
       }
       db.upsertAgent(agent);
+    }
+
+    // Purge stale agents not in entities.json (#75)
+    const registeredIds = new Set(entity.getAll().map(e => e.id));
+    for (const agent of db.getAllAgents()) {
+      if (!registeredIds.has(agent.name)) {
+        db.removeAgent(agent.name);
+      }
     }
 
     return { agents: db.getAllAgents(), changes };
