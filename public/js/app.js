@@ -524,7 +524,10 @@ const App = {
         if (msg.data.board) this.data.board = msg.data.board;
         if (msg.data.timeline) this.data.timeline = msg.data.timeline;
         if (msg.data.graph) this.data.graph = msg.data.graph;
-        if (msg.data.metrics) Metrics.update(msg.data.metrics);
+        if (msg.data.metrics) {
+          Metrics.update(msg.data.metrics);
+          Suggestions.updateMetrics(msg.data.metrics);
+        }
         this.renderAllPages();
         break;
 

@@ -59,6 +59,11 @@ const Suggestions = {
       .catch(() => {});
   },
 
+  // Accept metrics pushed via WebSocket (#64 — real-time suggestions)
+  updateMetrics(metricsData) {
+    this.metricsData = metricsData;
+  },
+
   _loadMetrics() {
     fetch('/api/metrics')
       .then(r => r.json())
@@ -139,7 +144,7 @@ const Suggestions = {
       });
     }
 
-    // Rule 2: Stale issues (> 72h no activity)
+    // Rule 2: Stale issues (> 72h no activity) — with smart-assign action (#64)
     const openIssues = openTasks.filter(t => t.type === 'issue' && t.state === 'opened');
     const staleIssues = openIssues.filter(t => {
       const lastUpdate = t.updated_at || t.created_at || now;
@@ -149,12 +154,15 @@ const Suggestions = {
       for (const issue of staleIssues.slice(0, 2)) {
         const hours = Math.round((now - (issue.updated_at || issue.created_at || now)) / (1000 * 60 * 60));
         const link = issue.url
-          ? `<a href="${esc(issue.url)}" target="_blank" class="sug-link">${esc(truncate(issue.title, 40))}</a>`
-          : esc(truncate(issue.title, 40));
+          ? `<a href="${esc(issue.url)}" target="_blank" class="sug-link">${esc(truncate(issue.title, 35))}</a>`
+          : esc(truncate(issue.title, 35));
+        const assignBtn = issue.id
+          ? `<button class="sug-assign-btn" data-smart-assign="${esc(issue.id)}" title="重新分配给最空闲 agent">重新分配</button>`
+          : '';
         suggestions.push({
           priority: 'high',
           icon: '⏰',
-          html: `${link} 停滞 ${hours}h，考虑重新分配`,
+          html: `${link} 停滞 ${hours}h ${assignBtn}`,
           reason: issue.assignee ? `当前负责: ${esc(issue.assignee)}` : '未分配',
           score: 90
         });
