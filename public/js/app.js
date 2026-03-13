@@ -103,6 +103,10 @@ const App = {
     const exportBtn = document.getElementById('workload-export-btn');
     if (exportBtn) exportBtn.addEventListener('click', () => WorkloadReport.exportJSON());
 
+    // Weekly report export (#60)
+    const weeklyExportBtn = document.getElementById('weekly-report-export-btn');
+    if (weeklyExportBtn) weeklyExportBtn.addEventListener('click', () => WeeklyReport.export());
+
     // Init graphs
     const overviewCanvas = document.getElementById('overview-collab-canvas');
     const overviewEmpty = document.getElementById('overview-collab-empty');
