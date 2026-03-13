@@ -55,6 +55,7 @@ const App = {
     TaskBoard.init();
     Timeline.init();
     CollabMatrix.init();
+    TrendsChart.init();
 
     // Init graphs
     const overviewCanvas = document.getElementById('overview-collab-canvas');

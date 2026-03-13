@@ -83,6 +83,31 @@
         </section>
       </div>
 
+      <!-- Performance Trends (#47) -->
+      <section class="section">
+        <div class="section-header">
+          <h2>生产力趋势</h2>
+          <div class="section-tools">
+            <div class="view-toggle">
+              <button data-trends-mode="team" class="btn-toggle active">团队</button>
+              <button data-trends-mode="individual" class="btn-toggle">个人</button>
+            </div>
+            <div class="view-toggle">
+              <button data-trends-period="7" class="btn-toggle">7天</button>
+              <button data-trends-period="14" class="btn-toggle active">14天</button>
+              <button data-trends-period="30" class="btn-toggle">30天</button>
+            </div>
+          </div>
+        </div>
+        <div class="trends-container">
+          <div class="trends-sublabel">每日完成任务</div>
+          <div id="trends-line-chart" class="trends-chart-area"></div>
+          <div id="trends-line-legend" class="trends-legend"></div>
+          <div class="trends-sublabel" style="margin-top:14px">活跃时段热力图</div>
+          <div id="trends-heatmap" class="trends-heatmap-area"></div>
+        </div>
+      </section>
+
       <!-- Collab Graph (mini) -->
       <section class="section">
         <div class="section-header">
@@ -265,6 +290,7 @@
   </main>
 
   <script src="js/lib/force-graph.js"></script>
+  <script src="js/components/trends.js"></script>
   <script src="js/components/card-wall.js"></script>
   <script src="js/components/team-capacity.js"></script>
   <script src="js/components/detail-drawer.js"></script>

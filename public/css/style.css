@@ -701,6 +701,97 @@ main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
   color: var(--red); display: flex; align-items: center; gap: 6px;
 }
 
+/* Performance Trends (#47) */
+.trends-container { padding: 4px 0; }
+
+.trends-sublabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 6px;
+}
+
+.trends-chart-area {
+  width: 100%;
+  height: 180px;
+  position: relative;
+}
+
+.trends-chart-area canvas {
+  display: block;
+  width: 100%;
+}
+
+.trends-loading, .trends-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.trends-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 6px;
+  min-height: 0;
+}
+
+.trends-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.trends-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Heatmap */
+.trends-heatmap-area { overflow-x: auto; }
+
+.heatmap-grid { display: flex; flex-direction: column; gap: 2px; }
+
+.heatmap-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.heatmap-day-label {
+  width: 20px;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-align: right;
+  padding-right: 4px;
+}
+
+.heatmap-hour-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 9px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.heatmap-cell {
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 1;
+  border-radius: 2px;
+  min-height: 10px;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
