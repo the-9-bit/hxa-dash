@@ -58,6 +58,7 @@ const App = {
     TrendsChart.init();
     Blockers.init();
     WorkloadReport.init();
+    Suggestions.init();
 
     // Workload report: sortable headers + export
     document.querySelectorAll('.workload-table thead .sortable').forEach(th => {
@@ -222,6 +223,9 @@ const App = {
 
     // Blocker Detection (#56)
     this._renderBlockers(agents);
+
+    // Action Suggestions (#57)
+    Suggestions.render(agents, this.data.board, this.data.timeline || []);
 
     // Cards
     CardWall.renderTo('overview-agent-cards', 'overview-team-stats', agents);

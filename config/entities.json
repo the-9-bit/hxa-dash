@@ -4,6 +4,7 @@
     {
       "id": "Jessie",
       "display_name": "Jessie",
+      "kind": "human",
       "role": "PM / 架构",
       "bio": "产品负责人，统筹 HxA Link 全线设计与迭代",
       "identities": { "connect": "Jessie", "gitlab": "Jessie" }

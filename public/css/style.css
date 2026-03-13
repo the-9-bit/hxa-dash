@@ -876,3 +876,28 @@ main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
 /* HxA Friendly Identity Badges (#58) */
 .kind-badge { font-size: 12px; margin-right: 2px; opacity: 0.7; }
 .kind-badge:hover { opacity: 1; }
+.kind-human { opacity: 0.9; }
+.kind-agent { opacity: 0.6; }
+
+/* Action Suggestions (#57) */
+.suggestions-section { border: 1px solid var(--accent); border-radius: 8px; background: rgba(88,166,255,.04); }
+.suggestions-list { display: flex; flex-direction: column; gap: 6px; }
+.sug-empty { text-align: center; padding: 12px; color: var(--green); font-size: 14px; }
+.sug-item {
+  display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px;
+  border-radius: 6px; background: rgba(255,255,255,.03);
+}
+.sug-high { border-left: 3px solid var(--red); }
+.sug-medium { border-left: 3px solid var(--orange); }
+.sug-low { border-left: 3px solid var(--accent); }
+.sug-rank {
+  font-size: 11px; font-weight: 700; color: var(--accent); background: rgba(88,166,255,.12);
+  width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0; margin-top: 1px;
+}
+.sug-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.sug-body { flex: 1; min-width: 0; }
+.sug-text { font-size: 13px; line-height: 1.4; }
+.sug-link { color: var(--accent); text-decoration: none; }
+.sug-link:hover { text-decoration: underline; }
+.sug-reason { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
