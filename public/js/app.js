@@ -1,4 +1,4 @@
-// HxA Dash — Main Application (v3: Incremental updates + progress bar — #43)
+// HxA Dash — Main Application (v4: Mobile UX + skeleton + sort + keyboard shortcuts — #50)
 
 // Progress bar controller (#43)
 const Progress = {
@@ -119,6 +119,10 @@ const App = {
     // Router
     this.initRouter();
 
+    // #50: Show skeleton cards while first fetch runs
+    this.renderSkeletons('overview-agent-cards', 6);
+    this.renderSkeletons('team-agent-cards', 6);
+
     // Initial REST fetch
     await this.fetchAll();
 
@@ -142,6 +146,24 @@ const App = {
       if (this.overviewGraph) this.overviewGraph.resize();
       if (this.collabGraph) this.collabGraph.resize();
     });
+
+    // #50: Sort dropdowns
+    const overviewSort = document.getElementById('overview-sort');
+    if (overviewSort) overviewSort.addEventListener('change', () => this.renderOverview());
+    const teamSort = document.getElementById('team-sort');
+    if (teamSort) teamSort.addEventListener('change', () => this.renderTeam());
+
+    // #50: Hamburger mobile nav
+    this.initMobileNav();
+
+    // #50: Keyboard shortcuts
+    this.initKeyboardShortcuts();
+
+    // #50: Auto-refresh countdown (30s interval)
+    this.initAutoRefresh();
+
+    // #50: Show skeleton loading on initial load (already running fetchAll above)
+    // Skeletons are shown by renderSkeletons() called before first fetchAll
   },
 
   // --- Router ---
@@ -270,8 +292,9 @@ const App = {
     // Action Suggestions (#57)
     Suggestions.render(agents, this.data.board, this.data.timeline || []);
 
-    // Cards
-    CardWall.renderTo('overview-agent-cards', 'overview-team-stats', agents);
+    // Cards — apply sort (#50)
+    const sortedForOverview = this._applySortOrder(agents, document.getElementById('overview-sort')?.value || 'default');
+    CardWall.renderTo('overview-agent-cards', 'overview-team-stats', sortedForOverview);
 
     // Board (filtered)
     const board = this._filterBoard('overview', this.data.board);
@@ -303,6 +326,10 @@ const App = {
     }
     if (statusFilter === 'online') agents = agents.filter(a => a.online);
     if (statusFilter === 'offline') agents = agents.filter(a => !a.online);
+
+    // Apply sort (#50)
+    const sortVal = document.getElementById('team-sort')?.value || 'default';
+    agents = this._applySortOrder(agents, sortVal);
 
     CardWall.renderTo('team-agent-cards', 'team-stats', agents);
 
@@ -533,6 +560,176 @@ const App = {
     const now = new Date();
     const pad = n => String(n).padStart(2, '0');
     el.textContent = `最后更新: ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  },
+
+  // --- #50: Skeleton loading screens ---
+  renderSkeletons(containerId, count = 4) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = Array.from({ length: count }, () => `
+      <div class="skeleton-card">
+        <div class="skeleton-row">
+          <div class="skeleton-line sk-h1" style="width:55%"></div>
+          <div class="skeleton-line sk-tag" style="margin-left:auto;width:18%"></div>
+        </div>
+        <div class="skeleton-line sk-h2"></div>
+        <div class="skeleton-line sk-h3"></div>
+        <div class="skeleton-row" style="margin-top:4px">
+          <div class="skeleton-line sk-tag" style="width:22%"></div>
+          <div class="skeleton-line sk-tag" style="width:22%"></div>
+          <div class="skeleton-line sk-tag" style="width:22%"></div>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  // --- #50: Sort helper ---
+  _applySortOrder(agents, sortKey) {
+    const arr = [...agents];
+    switch (sortKey) {
+      case 'health':
+        // Descending health score; agents without score go last
+        arr.sort((a, b) => {
+          const ha = a.health_score ?? -1;
+          const hb = b.health_score ?? -1;
+          if (hb !== ha) return hb - ha;
+          return (a.name || '').localeCompare(b.name || '');
+        });
+        break;
+      case 'activity': {
+        // Descending by latest_event timestamp, then online first
+        const ts = ag => (ag.latest_event && ag.latest_event.ts) ? ag.latest_event.ts : 0;
+        arr.sort((a, b) => {
+          const diff = ts(b) - ts(a);
+          if (diff !== 0) return diff;
+          return (a.name || '').localeCompare(b.name || '');
+        });
+        break;
+      }
+      case 'name':
+        arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        break;
+      default:
+        // Default: online first, then by name (CardWall's own sort)
+        break;
+    }
+    return arr;
+  },
+
+  // --- #50: Hamburger mobile nav ---
+  initMobileNav() {
+    const hamburger = document.getElementById('nav-hamburger');
+    const closeBtn  = document.getElementById('nav-close-btn');
+    if (!hamburger) return;
+
+    const open = () => {
+      document.body.classList.add('nav-mobile-open');
+      hamburger.setAttribute('aria-expanded', 'true');
+    };
+    const close = () => {
+      document.body.classList.remove('nav-mobile-open');
+      hamburger.setAttribute('aria-expanded', 'false');
+    };
+
+    hamburger.addEventListener('click', open);
+    closeBtn && closeBtn.addEventListener('click', close);
+
+    // Close nav when a nav item is tapped on mobile
+    document.getElementById('main-nav')?.addEventListener('click', (e) => {
+      if (e.target.classList.contains('nav-item')) close();
+    });
+  },
+
+  // --- #50: Keyboard shortcuts ---
+  initKeyboardShortcuts() {
+    this._kbdIndex = -1; // current focused card index in active card list
+
+    document.addEventListener('keydown', (e) => {
+      // Ignore when typing in inputs
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      // Ignore if a modifier key is held
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      switch (e.key) {
+        case 'r':
+        case 'R':
+          e.preventDefault();
+          this.fetchAll();
+          break;
+        case 'j':
+        case 'J':
+          e.preventDefault();
+          this._kbdNavigate(1);
+          break;
+        case 'k':
+        case 'K':
+          e.preventDefault();
+          this._kbdNavigate(-1);
+          break;
+        case 'Escape':
+          this._kbdClearFocus();
+          break;
+      }
+    });
+  },
+
+  _kbdNavigate(direction) {
+    // Get visible cards on the current page
+    const page = document.querySelector('.page.active');
+    if (!page) return;
+    const cards = Array.from(page.querySelectorAll('.agent-card'));
+    if (!cards.length) return;
+
+    // Remove previous focus
+    cards.forEach(c => c.classList.remove('kbd-focused'));
+
+    this._kbdIndex = Math.max(0, Math.min(cards.length - 1, (this._kbdIndex + direction + cards.length) % cards.length));
+
+    const card = cards[this._kbdIndex];
+    card.classList.add('kbd-focused');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  },
+
+  _kbdClearFocus() {
+    document.querySelectorAll('.agent-card.kbd-focused').forEach(c => c.classList.remove('kbd-focused'));
+    this._kbdIndex = -1;
+  },
+
+  // --- #50: Auto-refresh countdown (30s) ---
+  initAutoRefresh() {
+    const INTERVAL = 30; // seconds
+    let remaining = INTERVAL;
+    const el = document.getElementById('refresh-countdown');
+
+    const tick = () => {
+      if (!el) return;
+      if (remaining <= 0) {
+        el.textContent = '刷新中…';
+        el.classList.add('refreshing');
+        this.fetchAll().finally(() => {
+          remaining = INTERVAL;
+          el.classList.remove('refreshing');
+        });
+      } else {
+        el.textContent = `${remaining}s 后刷新`;
+        el.classList.remove('refreshing');
+        remaining--;
+      }
+    };
+
+    tick();
+    this._autoRefreshTimer = setInterval(tick, 1000);
+
+    // Reset countdown whenever manual refresh fires
+    const origFetch = this.fetchAll.bind(this);
+    this.fetchAll = (...args) => {
+      remaining = INTERVAL;
+      if (el) { el.textContent = '刷新中…'; el.classList.add('refreshing'); }
+      return origFetch(...args).finally(() => {
+        if (el) el.classList.remove('refreshing');
+      });
+    };
   }
 };
 
