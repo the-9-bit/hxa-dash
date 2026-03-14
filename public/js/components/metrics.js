@@ -98,9 +98,9 @@ const Metrics = {
             <tr>
               <th>Agent</th>
               <th>状态</th>
-              <th>进行中</th>
-              <th>完成 (7d)</th>
-              <th>MR (7d)</th>
+              <th class="metrics-num-header">进行中</th>
+              <th class="metrics-num-header">完成 (7d)</th>
+              <th class="metrics-num-header">MR (7d)</th>
             </tr>
           </thead>
           <tbody>${rows || '<tr><td colspan="5" class="metrics-empty">暂无成员数据</td></tr>'}</tbody>

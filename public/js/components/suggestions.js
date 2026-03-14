@@ -31,7 +31,7 @@ const Suggestions = {
     btn.disabled = true;
     btn.textContent = '分配中…';
     try {
-      const res = await fetch('/api/auto-assign/smart', {
+      const res = await fetch(`${BASE}/api/auto-assign/smart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_id: taskId })
@@ -53,7 +53,7 @@ const Suggestions = {
   },
 
   _loadAutoAssignHistory() {
-    fetch('/api/auto-assign/history?limit=5')
+    fetch(`${BASE}/api/auto-assign/history?limit=5`)
       .then(r => r.json())
       .then(data => { this.autoAssignHistory = data.events || []; })
       .catch(() => {});
@@ -65,7 +65,7 @@ const Suggestions = {
   },
 
   _loadMetrics() {
-    fetch('/api/metrics')
+    fetch(`${BASE}/api/metrics`)
       .then(r => r.json())
       .then(data => { this.metricsData = data; })
       .catch(() => {});

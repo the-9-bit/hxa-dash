@@ -1027,7 +1027,8 @@ main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
 }
 .metrics-table tr:hover td { background: rgba(255,255,255,.03); }
 .metrics-agent-name { font-weight: 500; }
-.metrics-num { text-align: right; font-variant-numeric: tabular-nums; }
+.metrics-num, .metrics-num-header { text-align: center; }
+.metrics-num { font-variant-numeric: tabular-nums; }
 .metrics-empty { text-align: center; color: var(--text-secondary); padding: 18px; }
 
 /* Weekly trend bar chart */
