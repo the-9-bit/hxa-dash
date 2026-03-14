@@ -19,6 +19,7 @@
         <a href="#tasks" class="nav-item" data-page="tasks">任务</a>
         <a href="#timeline" class="nav-item" data-page="timeline">时间轴</a>
         <a href="#report" class="nav-item" data-page="report">报表</a>
+        <a href="#tokens" class="nav-item" data-page="tokens">Tokens</a>
         <a href="#myview" class="nav-item" data-page="myview">我的</a>
       </nav>
       <button id="nav-close-btn" aria-label="关闭菜单">×</button>
@@ -344,6 +345,46 @@
       </section>
     </div>
 
+    <!-- Page: Token Dashboard (#93) -->
+    <div id="page-tokens" class="page">
+      <section class="section">
+        <div class="section-header">
+          <h2>Token 消耗分析</h2>
+          <div class="section-tools">
+            <div class="btn-group">
+              <button data-token-period="7" class="btn-toggle active">7天</button>
+              <button data-token-period="14" class="btn-toggle">14天</button>
+              <button data-token-period="30" class="btn-toggle">30天</button>
+            </div>
+          </div>
+        </div>
+        <span class="token-demo-badge">Demo Data</span>
+        <div id="token-summary" class="token-summary"></div>
+      </section>
+
+      <div class="token-layout">
+        <section class="section flex-2">
+          <div class="section-header"><h2>消耗趋势</h2></div>
+          <div class="trends-sublabel">每日 Token 用量（输入 + 输出）</div>
+          <div id="token-chart" class="trends-chart-area"></div>
+          <div class="token-chart-legend">
+            <span class="trends-legend-item"><span class="trends-legend-dot" style="background:#58a6ff"></span>输入</span>
+            <span class="trends-legend-item"><span class="trends-legend-dot" style="background:#bc8cff"></span>输出</span>
+          </div>
+        </section>
+
+        <section class="section flex-1">
+          <div class="section-header"><h2>费用分布</h2></div>
+          <div id="token-cost-pie" class="token-pie-container"></div>
+        </section>
+      </div>
+
+      <section class="section">
+        <div class="section-header"><h2>Agent 消耗排行</h2></div>
+        <div id="token-agent-table" class="token-table-container"></div>
+      </section>
+    </div>
+
     <!-- Page: My View (#55) -->
     <div id="page-myview" class="page">
       <div class="filter-bar">
@@ -399,6 +440,7 @@
   <script src="js/components/suggestions.js"></script>
   <script src="js/components/metrics.js"></script>
   <script src="js/components/my-view.js"></script>
+  <script src="js/components/token-dashboard.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

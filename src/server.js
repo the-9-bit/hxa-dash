@@ -24,6 +24,7 @@ const autoAssignEngine = require('./auto-assign-engine');
 const metricsRoutes = require('./routes/metrics');
 const { computeMetrics } = metricsRoutes;
 const agentRoutes = require('./routes/agent');
+const tokenRoutes = require('./routes/tokens');
 
 const PORT = process.env.PORT || 3479;
 
@@ -75,6 +76,7 @@ app.use('/api/blockers', blockersRoutes);
 app.use('/api/auto-assign', autoAssignRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/agent', agentRoutes);
+app.use('/api/tokens', tokenRoutes);
 app.use('/api', reportRoutes.router);
 
 // GET /api/health — system health check (#48)

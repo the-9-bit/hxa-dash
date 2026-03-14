@@ -96,6 +96,7 @@ const App = {
     Suggestions.init();
     Metrics.init();
     MyView.init();
+    TokenDashboard.init();
 
     // Workload report: sortable headers + export
     document.querySelectorAll('.workload-table thead .sortable').forEach(th => {
@@ -184,7 +185,7 @@ const App = {
   },
 
   navigateTo(page, pushState = true) {
-    const validPages = ['overview', 'team', 'collab', 'tasks', 'timeline', 'report', 'myview'];
+    const validPages = ['overview', 'team', 'collab', 'tasks', 'timeline', 'report', 'tokens', 'myview'];
     if (!validPages.includes(page)) page = 'overview';
 
     // Update nav
@@ -208,6 +209,9 @@ const App = {
 
     // Re-render current page with filters
     this.renderCurrentPage();
+
+    // Lazy-load token data when first visiting tokens page
+    if (page === 'tokens' && !TokenDashboard._data) TokenDashboard.fetch();
   },
 
   // --- Data Fetching ---
