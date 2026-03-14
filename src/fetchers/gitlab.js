@@ -54,14 +54,20 @@ function normalizeGitLabAction(actionName) {
   }
 }
 
-// Parse session estimate from GitLab labels (estimate::S, estimate::M, estimate::L, estimate::XL)
+// Parse session estimate from GitLab labels
+// Supports both scoped (estimate::S) and bare (S, M, L, XL) label formats
 function parseEstimateLabel(labels) {
+  const validSizes = new Set(['S', 'M', 'L', 'XL']);
   for (const label of labels) {
+    // Scoped format: estimate::S
     const match = label.match(/^estimate::(\w+)$/i);
     if (match) {
       const size = match[1].toUpperCase();
-      if (['S', 'M', 'L', 'XL'].includes(size)) return size;
+      if (validSizes.has(size)) return size;
     }
+    // Bare format: S, M, L, XL (exact match, case-insensitive)
+    const bare = label.trim().toUpperCase();
+    if (validSizes.has(bare)) return bare;
   }
   return null;
 }
