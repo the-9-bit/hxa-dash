@@ -55,7 +55,41 @@ if (config.entities) {
   entity.loadFromConfig(config.entities);
 }
 
-// Init fetchers
+// Parse scopes (#100): multi connect-server × org management
+const scopes = [];
+if (Array.isArray(config.scopes) && config.scopes.length > 0) {
+  for (const s of config.scopes) {
+    const scopeId = s.org_id || s.id || 'default';
+    scopes.push({
+      id: scopeId,
+      name: s.name || scopeId,
+      hub_url: s.hub_url || config.connect?.hub_url,
+      connect: { hub_url: s.hub_url || config.connect?.hub_url, agent_token: s.agent_token || config.connect?.agent_token },
+      gitlab: s.gitlab || config.gitlab,
+      entities: s.entities || null
+    });
+    if (s.entities) entity.loadFromConfig(Array.isArray(s.entities) ? s.entities : []);
+  }
+} else {
+  // Legacy single-scope format
+  scopes.push({
+    id: 'default',
+    name: config.scope_name || 'Default',
+    hub_url: config.connect?.hub_url || '',
+    connect: config.connect,
+    gitlab: config.gitlab,
+    entities: null
+  });
+}
+
+// Create per-scope fetcher instances
+const scopeFetchers = scopes.map(s => ({
+  id: s.id,
+  connect: connectFetcher.create(s.connect, s.id),
+  gitlab: gitlabFetcher.create(s.gitlab, s.id)
+}));
+
+// Init default module-level fetchers (backward compat for routes)
 connectFetcher.init(config);
 gitlabFetcher.init(config);
 
@@ -108,6 +142,22 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// GET /api/scopes — available management scopes (#100)
+app.get('/api/scopes', (req, res) => {
+  // Group scopes by hub_url for frontend display
+  const serverMap = new Map();
+  for (const s of scopes) {
+    const hub = s.hub_url || 'unknown';
+    if (!serverMap.has(hub)) serverMap.set(hub, { hub, orgs: [] });
+    serverMap.get(hub).orgs.push({ id: s.id, name: s.name });
+  }
+  res.json({
+    servers: [...serverMap.values()],
+    scopes: scopes.map(s => ({ id: s.id, name: s.name, hub: s.hub_url })),
+    default: scopes[0]?.id || 'default'
+  });
+});
+
 // Graph endpoint (supports ?project= filter)
 app.get('/api/graph', (req, res) => {
   const graph = collab.getGraph();
@@ -144,9 +194,12 @@ async function pollAll() {
   isPolling = true;
 
   try {
-    // Fetch from all sources
-    const { agents, changes: agentChanges } = await connectFetcher.fetchAgents();
-    const gitlabData = await gitlabFetcher.fetchAll();
+    // Fetch from all scopes in parallel (#100)
+    await Promise.all(scopeFetchers.map(async (sf) => {
+      await sf.connect.fetchAgents();
+      await sf.gitlab.fetchAll();
+    }));
+    const agents = db.getAllAgents();
 
     // Analyze collaboration
     const graph = collab.analyze();
@@ -164,7 +217,7 @@ async function pollAll() {
     // Always broadcast full snapshot after each poll cycle (#40)
     ws.broadcast('snapshot', snapshot);
 
-    console.log(`[Poll] Agents: ${agents.length}, Issues: ${gitlabData.issues.length}, MRs: ${gitlabData.mrs.length}, Events: ${gitlabData.events.length}, Edges: ${graph.edges.length}`);
+    console.log(`[Poll] Agents: ${agents.length}, Scopes: ${scopes.length}, Edges: ${graph.edges.length}`);
   } catch (err) {
     console.error('[Poll] Error:', err.message);
   } finally {
@@ -192,15 +245,15 @@ async function startPolling() {
   autoAssignEngine.init(config, ws);
   autoAssignEngine.start();
 
-  // Connect polling (30s) — always broadcast so clients stay in sync (#40)
+  // Connect polling (30s) — all scopes in parallel (#100)
   setInterval(async () => {
-    await connectFetcher.fetchAgents();
+    await Promise.all(scopeFetchers.map(sf => sf.connect.fetchAgents()));
     ws.broadcast('team:update', buildAgents());
   }, config.polling?.connect_interval_ms || 30000);
 
-  // GitLab polling (60s)
+  // GitLab polling (60s) — all scopes in parallel (#100)
   setInterval(async () => {
-    const data = await gitlabFetcher.fetchAll();
+    await Promise.all(scopeFetchers.map(sf => sf.gitlab.fetchAll()));
     const graph = collab.analyze();
 
     // Always broadcast all data channels so manual refresh button is never needed (#40)

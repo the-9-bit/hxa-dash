@@ -1,0 +1,19 @@
+{
+  "_comment": "Data sources configuration. Copy to sources.json and fill in credentials.",
+  "_comment_scopes": "Multi-scope support (#100): define scopes array for multiple connect servers × orgs. Each scope uses org_id (UUID) as immutable identifier.",
+
+  "scopes": [
+    {
+      "org_id": "8375851a-94ec-4efb-bd0d-7ec6d4cab536",
+      "name": "HxA Team K",
+      "hub_url": "https://connect.coco.xyz/hub",
+      "agent_token": "TOKEN",
+      "gitlab": { "url": "https://git.coco.xyz", "token": "TOKEN", "group_id": 2 }
+    }
+  ],
+
+  "_comment_legacy": "Single-scope format (backward compatible, used when scopes array is absent):",
+  "connect": { "hub_url": "https://connect.coco.xyz/hub", "agent_token": "TOKEN" },
+  "gitlab": { "url": "https://git.coco.xyz", "token": "TOKEN", "group_id": 2 },
+  "polling": { "connect_interval_ms": 30000, "gitlab_interval_ms": 60000 }
+}

@@ -69,6 +69,99 @@ function formatTime(ts) {
   return `${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Scope manager (#100): multi connect-server × org management
+const ScopeManager = {
+  STORAGE_KEY: 'hxa-dash-scope',
+  scopes: [],
+  activeScope: null,
+
+  async init() {
+    try {
+      const res = await fetch(`${BASE}/api/scopes`);
+      if (!res.ok) return;
+      const data = await res.json();
+      this.scopes = data.scopes || [];
+
+      // Restore last selection or use default
+      const saved = localStorage.getItem(this.STORAGE_KEY);
+      if (saved && this.scopes.some(s => s.id === saved)) {
+        this.activeScope = saved;
+      } else {
+        this.activeScope = data.default || (this.scopes[0]?.id) || null;
+      }
+
+      this._renderSelector(data.servers || []);
+    } catch (e) {
+      console.error('[ScopeManager] Init error:', e);
+    }
+  },
+
+  _renderSelector(servers) {
+    const sel = document.getElementById('scope-selector');
+    if (!sel) return;
+
+    // Hide if single scope
+    if (this.scopes.length <= 1) {
+      sel.classList.add('hidden');
+      return;
+    }
+
+    sel.innerHTML = '';
+    // Group by server
+    if (servers.length > 1) {
+      for (const server of servers) {
+        const group = document.createElement('optgroup');
+        group.label = server.hub.replace(/^https?:\/\//, '').replace(/\/hub\/?$/, '');
+        for (const org of server.orgs) {
+          const opt = document.createElement('option');
+          opt.value = org.id;
+          opt.textContent = org.name;
+          if (org.id === this.activeScope) opt.selected = true;
+          group.appendChild(opt);
+        }
+        sel.appendChild(group);
+      }
+    } else {
+      for (const s of this.scopes) {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name;
+        if (s.id === this.activeScope) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    }
+
+    sel.classList.remove('hidden');
+    sel.addEventListener('change', () => {
+      this.activeScope = sel.value;
+      localStorage.setItem(this.STORAGE_KEY, this.activeScope);
+      // Update agent filter with scoped agents, then re-render
+      const scopedAgents = this.filter(App.data.team);
+      AgentFilter.setAgents(scopedAgents);
+      App.renderAllPages();
+    });
+  },
+
+  filter(items) {
+    if (!this.activeScope || this.scopes.length <= 1) return items;
+    return items.filter(i => !i.scope || i.scope === this.activeScope);
+  },
+
+  filterBoard(board) {
+    if (!this.activeScope || this.scopes.length <= 1) return board;
+    const f = arr => (arr || []).filter(t => !t.scope || t.scope === this.activeScope);
+    return { todo: f(board.todo), doing: f(board.doing), done: f(board.done) };
+  },
+
+  filterGraph(graph) {
+    if (!this.activeScope || this.scopes.length <= 1) return graph;
+    const nodes = (graph.nodes || []).filter(n => !n.scope || n.scope === this.activeScope);
+    const nodeNames = new Set(nodes.map(n => n.name || n.id));
+    const edges = (graph.edges || []).filter(e => nodeNames.has(e.source) && nodeNames.has(e.target));
+    return { nodes, edges };
+  }
+};
+
 // App state
 const App = {
   ws: null,
@@ -82,6 +175,9 @@ const App = {
   collabGraph: null,
 
   async init() {
+    // Init scope manager (#100)
+    await ScopeManager.init();
+
     // Init components
     AgentFilter.init();
     AgentFilter.initCollabButtons();
@@ -242,7 +338,7 @@ const App = {
       if (teamRes.ok) {
         const teamData = await teamRes.json();
         this.data.team = teamData.agents;
-        AgentFilter.setAgents(teamData.agents);
+        AgentFilter.setAgents(ScopeManager.filter(teamData.agents));
       }
 
       if (boardRes.ok) {
@@ -302,9 +398,10 @@ const App = {
 
   renderOverview() {
     const filter = AgentFilter.getFilter('overview');
+    const scopedTeam = ScopeManager.filter(this.data.team);
     const agents = filter
-      ? this.data.team.filter(a => filter.has(a.name))
-      : this.data.team;
+      ? scopedTeam.filter(a => filter.has(a.name))
+      : scopedTeam;
 
     // Team Capacity (#45)
     TeamCapacity.render(agents);
@@ -323,8 +420,9 @@ const App = {
     const board = this._filterBoard('overview', this.data.board);
     TaskBoard.renderTo('overview', board);
 
-    // Timeline (filtered)
-    const events = AgentFilter.filterItems('overview', this.data.timeline, 'agent');
+    // Timeline (filtered — scope then agent)
+    const scopedTimeline = ScopeManager.filter(this.data.timeline);
+    const events = AgentFilter.filterItems('overview', scopedTimeline, 'agent');
     Timeline.renderTo('overview-timeline', events, 20);
 
     // Graph (filtered)
@@ -334,11 +432,11 @@ const App = {
   },
 
   renderTeam() {
-    // Team page shows ALL agents (with search/status filter)
+    // Team page shows ALL agents (with search/status filter), scoped (#100)
     const search = (document.getElementById('team-search')?.value || '').toLowerCase();
     const statusFilter = document.getElementById('team-status-filter')?.value || 'all';
 
-    let agents = this.data.team;
+    let agents = ScopeManager.filter(this.data.team);
     if (search) {
       agents = agents.filter(a =>
         (a.name || '').toLowerCase().includes(search) ||
@@ -388,7 +486,8 @@ const App = {
   },
 
   renderTimeline() {
-    const events = AgentFilter.filterItems('timeline', this.data.timeline, 'agent');
+    const scopedTimeline = ScopeManager.filter(this.data.timeline);
+    const events = AgentFilter.filterItems('timeline', scopedTimeline, 'agent');
     Timeline.renderTo('timeline', events, 100);
 
     const totalEl = document.getElementById('timeline-total');
@@ -423,21 +522,25 @@ const App = {
   },
 
   _filterBoard(context, board) {
+    // Apply scope filter first (#100), then agent filter
+    const scoped = ScopeManager.filterBoard(board);
     const f = AgentFilter.getFilter(context);
-    if (!f) return board;
+    if (!f) return scoped;
     return {
-      todo: (board.todo || []).filter(t => !t.assignee || f.has(t.assignee)),
-      doing: (board.doing || []).filter(t => !t.assignee || f.has(t.assignee)),
-      done: (board.done || []).filter(t => !t.assignee || f.has(t.assignee))
+      todo: (scoped.todo || []).filter(t => !t.assignee || f.has(t.assignee)),
+      doing: (scoped.doing || []).filter(t => !t.assignee || f.has(t.assignee)),
+      done: (scoped.done || []).filter(t => !t.assignee || f.has(t.assignee))
     };
   },
 
   _filterGraph(context, graph) {
+    // Apply scope filter first (#100), then agent filter
+    const scoped = ScopeManager.filterGraph(graph || { nodes: [], edges: [] });
     const f = AgentFilter.getFilter(context);
-    if (!f || !graph) return graph || { nodes: [], edges: [] };
-    const nodes = (graph.nodes || []).filter(n => f.has(n.id));
+    if (!f) return scoped;
+    const nodes = (scoped.nodes || []).filter(n => f.has(n.id));
     const nodeSet = new Set(nodes.map(n => n.id));
-    const edges = (graph.edges || []).filter(e => nodeSet.has(e.source) && nodeSet.has(e.target));
+    const edges = (scoped.edges || []).filter(e => nodeSet.has(e.source) && nodeSet.has(e.target));
     return { nodes, edges };
   },
 
@@ -534,7 +637,7 @@ const App = {
         if (msg.data.team) {
           const agents = Array.isArray(msg.data.team) ? msg.data.team : [];
           this.data.team = agents;
-          AgentFilter.setAgents(agents);
+          AgentFilter.setAgents(ScopeManager.filter(agents));
         }
         if (msg.data.board) this.data.board = msg.data.board;
         if (msg.data.timeline) this.data.timeline = msg.data.timeline;
@@ -556,7 +659,7 @@ const App = {
       case 'team:update':
         if (Array.isArray(msg.data)) {
           this.data.team = msg.data;
-          AgentFilter.setAgents(msg.data);
+          AgentFilter.setAgents(ScopeManager.filter(msg.data));
           this.renderOverview();
           this.renderTeam();
         }
