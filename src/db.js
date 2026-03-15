@@ -312,7 +312,7 @@ const getStaleMRs = (now, thresholdMs) => {
       title: t.title,
       url: t.url,
       project: t.project,
-      author: t.assignee || null,
+      author: t.author || t.assignee || null,
       reviewer: t.reviewer || null,
       stale_minutes: Math.floor((now - t.updated_at) / 60000),
     }))
