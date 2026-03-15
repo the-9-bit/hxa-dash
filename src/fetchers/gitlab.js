@@ -221,4 +221,166 @@ async function fetchAll() {
   return { issues, mrs, events };
 }
 
-module.exports = { init, fetchIssues, fetchMRs, fetchEvents, fetchAll, mapUsername };
+// Factory: create independent fetcher instance per scope (#100)
+function create(gitlabConfig, scopeId) {
+  const scopeConf = gitlabConfig;
+  const scope = scopeId || 'default';
+  const scopeProjectNameCache = new Map();
+
+  function scopedApiFetch(endpoint) {
+    const url = `${scopeConf.url}/api/v4${endpoint}`;
+    return new Promise((resolve, reject) => {
+      const mod = url.startsWith('https') ? https : http;
+      const req = mod.get(url, {
+        headers: { 'PRIVATE-TOKEN': scopeConf.token }
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          if (res.statusCode >= 400) {
+            reject(new Error(`HTTP ${res.statusCode} on ${endpoint}: ${data.slice(0, 200)}`));
+            return;
+          }
+          try { resolve(JSON.parse(data)); }
+          catch (e) { reject(new Error(`JSON parse: ${e.message}`)); }
+        });
+      });
+      req.on('error', reject);
+      req.setTimeout(15000, () => { req.destroy(); reject(new Error('timeout')); });
+    });
+  }
+
+  async function scopedFetchIssues() {
+    try {
+      const issues = await scopedApiFetch(`/groups/${scopeConf.group_id}/issues?state=all&per_page=100&order_by=updated_at&sort=desc`);
+      const changes = [];
+      for (const issue of issues) {
+        const assignees = (issue.assignees || []).map(a => mapUsername(a.username));
+        const assignee = assignees[0] || (issue.assignee ? mapUsername(issue.assignee.username) : null);
+        const task = {
+          id: `issue-${issue.project_id}-${issue.iid}`,
+          iid: issue.iid,
+          project_id: issue.project_id,
+          type: 'issue',
+          project: issue.references?.full?.split('#')[0]?.replace(/\/$/, '')?.split('/')?.pop() || 'unknown',
+          title: issue.title,
+          description: issue.description || '',
+          state: issue.state,
+          assignee,
+          author: issue.author ? mapUsername(issue.author.username) : null,
+          reviewer: null,
+          url: issue.web_url,
+          labels: JSON.stringify(issue.labels || []),
+          estimate: parseEstimateLabel(issue.labels || []),
+          created_at: new Date(issue.created_at).getTime(),
+          updated_at: new Date(issue.updated_at).getTime(),
+          scope
+        };
+        db.upsertTask(task);
+        changes.push(task);
+      }
+      return changes;
+    } catch (err) {
+      console.error(`[GitLabFetcher:${scope}] Issues error:`, err.message);
+      return [];
+    }
+  }
+
+  async function scopedFetchMRs() {
+    try {
+      const mrs = await scopedApiFetch(`/groups/${scopeConf.group_id}/merge_requests?state=all&per_page=100&order_by=updated_at&sort=desc`);
+      const changes = [];
+      for (const mr of mrs) {
+        const mrAssignees = (mr.assignees || []).map(a => mapUsername(a.username));
+        const assignee = mrAssignees[0] || (mr.assignee ? mapUsername(mr.assignee.username) : null);
+        const reviewers = (mr.reviewers || []).map(r => mapUsername(r.username));
+        const task = {
+          id: `mr-${mr.project_id}-${mr.iid}`,
+          type: 'mr',
+          project: mr.references?.full?.split('!')[0]?.replace(/\/$/, '')?.split('/')?.pop() || 'unknown',
+          title: mr.title,
+          state: mr.state,
+          author: mr.author ? mapUsername(mr.author.username) : null,
+          assignee,
+          reviewer: reviewers.join(',') || null,
+          url: mr.web_url,
+          labels: JSON.stringify(mr.labels || []),
+          estimate: parseEstimateLabel(mr.labels || []),
+          created_at: new Date(mr.created_at).getTime(),
+          updated_at: new Date(mr.updated_at).getTime(),
+          scope
+        };
+        db.upsertTask(task);
+        changes.push(task);
+      }
+      return changes;
+    } catch (err) {
+      console.error(`[GitLabFetcher:${scope}] MRs error:`, err.message);
+      return [];
+    }
+  }
+
+  async function scopedFetchEvents() {
+    try {
+      const projects = await scopedApiFetch(`/groups/${scopeConf.group_id}/projects?per_page=100&simple=true`);
+      const newEvents = [];
+      const seenEventKeys = new Set();
+
+      for (const proj of projects) {
+        scopeProjectNameCache.set(proj.id, proj.name || proj.path);
+        let projectEvents;
+        try {
+          projectEvents = await scopedApiFetch(`/projects/${proj.id}/events?per_page=50`);
+        } catch { continue; }
+
+        for (const event of projectEvents) {
+          const agent = event.author ? mapUsername(event.author.username) : 'unknown';
+          let action = event.action_name || 'unknown';
+          let targetType = event.target_type ? event.target_type.toLowerCase() : (event.push_data ? 'push' : 'unknown');
+          let targetTitle = event.target_title || (event.push_data ? `${event.push_data.commit_count} commit(s) to ${event.push_data.ref}` : '');
+          const project = scopeProjectNameCache.get(event.project_id) || proj.name || `project-${event.project_id}`;
+
+          const eventKey = `${event.created_at}-${agent}-${action}-${targetType}-${targetTitle}`;
+          if (seenEventKeys.has(eventKey)) continue;
+          seenEventKeys.add(eventKey);
+
+          let externalId = null;
+          if (targetType === 'mergerequest' && event.target_id) {
+            externalId = 'mr:' + event.target_id + ':' + normalizeGitLabAction(event.action_name);
+          } else if (targetType === 'issue' && event.target_id) {
+            externalId = 'issue:' + event.target_id + ':' + normalizeGitLabAction(event.action_name);
+          } else if (targetType === 'note' && event.target_id) {
+            externalId = 'note:' + event.target_id;
+          } else if (event.push_data?.commit_to) {
+            externalId = 'commit:' + event.push_data.commit_to;
+          }
+
+          const evt = {
+            timestamp: new Date(event.created_at).getTime(),
+            agent, action, target_type: targetType, target_title: targetTitle,
+            project, url: event.target_url || '',
+            is_collab: 0, external_id: externalId,
+            scope
+          };
+          db.insertEvent(evt);
+          newEvents.push(evt);
+        }
+      }
+      return newEvents;
+    } catch (err) {
+      console.error(`[GitLabFetcher:${scope}] Events error:`, err.message);
+      return [];
+    }
+  }
+
+  async function scopedFetchAll() {
+    const [issues, mrs, events] = await Promise.all([
+      scopedFetchIssues(), scopedFetchMRs(), scopedFetchEvents()
+    ]);
+    return { issues, mrs, events };
+  }
+
+  return { fetchIssues: scopedFetchIssues, fetchMRs: scopedFetchMRs, fetchEvents: scopedFetchEvents, fetchAll: scopedFetchAll };
+}
+
+module.exports = { init, fetchIssues, fetchMRs, fetchEvents, fetchAll, mapUsername, create };

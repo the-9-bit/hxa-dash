@@ -79,4 +79,60 @@ async function fetchAgents() {
   }
 }
 
-module.exports = { init, fetchAgents };
+// Factory: create independent fetcher instance per scope (#100)
+function create(connectConfig, scopeId) {
+  const scopeConf = connectConfig;
+  const scope = scopeId || 'default';
+
+  async function scopedFetchAgents() {
+    const url = `${scopeConf.hub_url}/api/bots`;
+    const headers = { 'Authorization': `Bearer ${scopeConf.agent_token}` };
+
+    try {
+      const bots = await fetch(url, headers);
+      const now = Date.now();
+      const changes = [];
+
+      for (const bot of bots) {
+        const ent = entity.get(bot.name);
+        if (!ent) continue;
+        const entMeta = ent.meta || {};
+
+        const prev = db.getAgent(bot.name);
+        const agent = {
+          name: bot.name,
+          role: bot.role || entMeta.role || '',
+          bio: bot.bio || entMeta.bio || '',
+          tags: JSON.stringify(bot.tags || []),
+          kind: entMeta.kind || 'agent',
+          online: bot.online ? 1 : 0,
+          last_seen_at: bot.last_seen_at ? new Date(bot.last_seen_at).getTime() : null,
+          updated_at: now,
+          scope
+        };
+
+        if (!prev || prev.online !== agent.online || prev.role !== agent.role) {
+          changes.push(agent);
+        }
+        db.upsertAgent(agent);
+      }
+
+      // Purge stale agents — only within this scope (#100 P2)
+      const registeredIds = new Set(entity.getAll().map(e => e.id));
+      for (const agent of db.getAllAgents()) {
+        if (agent.scope === scope && !registeredIds.has(agent.name)) {
+          db.removeAgent(agent.name);
+        }
+      }
+
+      return { agents: db.getAllAgents().filter(a => a.scope === scope), changes };
+    } catch (err) {
+      console.error(`[ConnectFetcher:${scope}] Error:`, err.message);
+      return { agents: db.getAllAgents().filter(a => a.scope === scope), changes: [] };
+    }
+  }
+
+  return { fetchAgents: scopedFetchAgents };
+}
+
+module.exports = { init, fetchAgents, create };
