@@ -32,6 +32,9 @@ const CardWall = {
     const statsEl = document.getElementById(statsId);
     if (!container) return;
 
+    // Clear skeleton placeholders on first real render (#105)
+    container.querySelectorAll('.skeleton-card').forEach(el => el.remove());
+
     // Sort: online first, then by name
     const sorted = [...agents].sort((a, b) => {
       if (a.online !== b.online) return b.online - a.online;
