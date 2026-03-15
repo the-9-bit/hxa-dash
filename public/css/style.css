@@ -111,6 +111,7 @@ main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
   margin-bottom: 12px;
 }
 .section-header h2 { font-size: 16px; font-weight: 600; }
+.section-subtitle { font-size: 12px; color: var(--text-secondary); margin: -8px 0 8px; font-weight: 400; }
 .section-tools { display: flex; gap: 8px; align-items: center; }
 
 .team-stats { font-size: 13px; color: var(--text-secondary); }

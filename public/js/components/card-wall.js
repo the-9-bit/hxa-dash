@@ -219,7 +219,7 @@ const CardWall = {
           <div class="card-top-left">${healthHTML}${kindBadge}<span class="agent-name">${esc(agent.name)}</span></div>
           <span class="work-status-badge ${workStatus}" title="${workStatus}">${statusLabel}</span>
         </div>
-        <div class="agent-role">${esc(agent.role || '—')}</div>
+        <div class="agent-role">${esc(agent.role || (agent.kind === 'human' ? '团队成员' : 'AI Agent'))}</div>
         ${agent.bio ? `<div class="agent-bio">${esc(truncate(agent.bio, 60))}</div>` : ''}
         ${lastActiveHTML}
         ${blockingHTML}
