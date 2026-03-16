@@ -29,6 +29,7 @@ const webhookRoutes = require('./routes/webhook');
 const healthDiagRoutes = require('./routes/health-diagnostics');
 const liveRoutes = require('./routes/live');
 const pipelineRoutes = require('./routes/pipeline');
+const mrBoardRoutes = require('./routes/mr-board');
 const projectRoutes = require('./routes/projects');
 const { buildProjects } = projectRoutes;
 
@@ -121,6 +122,7 @@ app.use('/api/webhook', webhookRoutes);
 app.use('/api/diagnostics', healthDiagRoutes);
 app.use('/api/live', liveRoutes);
 app.use('/api/pipeline', pipelineRoutes);
+app.use('/api/mr-board', mrBoardRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api', reportRoutes.router);
 
@@ -192,6 +194,9 @@ reportRoutes.init(ws, config);
 
 // Init webhook routes (needs ws + config for downstream notifications)
 webhookRoutes.init(config, ws);
+
+// Init MR board routes (#109 + #110)
+mrBoardRoutes.init(config);
 
 // Init WebSocket with snapshot provider (includes metrics for real-time updates #66)
 ws.init(server, () => ({

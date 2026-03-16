@@ -195,6 +195,7 @@ const App = {
     TokenDashboard.init();
     LiveDashboard.init();
     Pipeline.init();
+    MRBoard.init();
     TimeEstimates.init();
     HealthDiagnostics.init();
     Projects.init();
@@ -286,7 +287,7 @@ const App = {
   },
 
   navigateTo(page, pushState = true) {
-    const validPages = ['overview', 'team', 'collab', 'tasks', 'timeline', 'report', 'tokens', 'estimates', 'live', 'pipeline', 'health', 'projects', 'myview', 'about'];
+    const validPages = ['overview', 'team', 'collab', 'tasks', 'timeline', 'report', 'tokens', 'estimates', 'live', 'pipeline', 'mr-board', 'health', 'projects', 'myview', 'about'];
     if (!validPages.includes(page)) page = 'overview';
 
     // Update nav
@@ -317,6 +318,8 @@ const App = {
     if (page === 'live') LiveDashboard.fetch();
     // Lazy-load pipeline (#77)
     if (page === 'pipeline') Pipeline.fetch();
+    // Lazy-load MR board (#109 + #110)
+    if (page === 'mr-board') MRBoard.fetch();
     // Lazy-load time estimates (#79)
     if (page === 'estimates') TimeEstimates.fetch();
     // Lazy-load health diagnostics (#94)

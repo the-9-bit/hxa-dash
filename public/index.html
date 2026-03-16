@@ -18,6 +18,7 @@
         <a href="#team" class="nav-item" data-page="team">团队</a>
         <a href="#tasks" class="nav-item" data-page="tasks">任务</a>
         <a href="#pipeline" class="nav-item" data-page="pipeline">Pipeline</a>
+        <a href="#mr-board" class="nav-item" data-page="mr-board">MR Board</a>
         <span class="nav-sep"></span>
         <!-- Analysis -->
         <a href="#projects" class="nav-item" data-page="projects">项目</a>
@@ -429,6 +430,21 @@
       </div>
     </div>
 
+    <!-- Page: MR Board (#109 + #110) -->
+    <div id="page-mr-board" class="page">
+      <section class="section">
+        <div class="section-header">
+          <h2>MR Pipeline Board</h2>
+        </div>
+        <div id="mr-board-summary" class="mrb-summary"></div>
+      </section>
+      <section class="section">
+        <div id="mr-board-list" class="mrb-list">
+          <div class="mrb-empty">Loading...</div>
+        </div>
+      </section>
+    </div>
+
     <!-- Page: Time Estimates (#79) -->
     <div id="page-estimates" class="page">
       <section class="section">
@@ -538,6 +554,7 @@
   <script src="js/components/my-view.js"></script>
   <script src="js/components/live-dashboard.js"></script>
   <script src="js/components/pipeline.js"></script>
+  <script src="js/components/mr-board.js"></script>
   <script src="js/components/token-dashboard.js"></script>
   <script src="js/components/time-estimates.js"></script>
   <script src="js/components/health-diagnostics.js"></script>
