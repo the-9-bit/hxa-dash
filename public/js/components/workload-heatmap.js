@@ -23,9 +23,6 @@ const WorkloadHeatmap = {
 
     // Compute per-agent metrics
     const rows = active.map(a => {
-      const openIssues = (a.current_tasks || []).filter(t => t.type === 'issue').length;
-      const openMRs = (a.current_tasks || []).filter(t => t.type === 'mr').length;
-      // Use full open_tasks count since current_tasks is capped at 3
       const totalOpen = a.stats?.open_tasks || 0;
       const blockingMRs = a.blocking_mrs?.length || 0;
       const capacityPct = a.capacity ? Math.round((a.capacity.current / a.capacity.max) * 100) : 0;
@@ -34,7 +31,6 @@ const WorkloadHeatmap = {
         online: a.online,
         healthScore: a.health_score || 0,
         openTasks: totalOpen,
-        openMRs,
         blockingMRs,
         capacityPct,
         workStatus: a.work_status
@@ -44,7 +40,6 @@ const WorkloadHeatmap = {
     // Column definitions
     const cols = [
       { key: 'openTasks', label: '待办任务', thresholds: [0, 2, 4, 6] },
-      { key: 'openMRs', label: '待合 MR', thresholds: [0, 1, 2, 3] },
       { key: 'blockingMRs', label: '阻塞 MR', thresholds: [0, 1, 2, 3] },
       { key: 'capacityPct', label: '容量 %', thresholds: [0, 40, 70, 90] },
       { key: 'healthScore', label: '健康分', thresholds: [80, 60, 40, 20], invert: true },
