@@ -89,6 +89,13 @@ const CardWall = {
       }
     });
 
+    // #105: remove any orphan children that aren't agent cards (skeleton debris, etc.)
+    for (const child of [...container.children]) {
+      if (!child.classList.contains('agent-card') || !child.dataset.name) {
+        child.remove();
+      }
+    }
+
     // Stats (HxA Friendly #58: unified Human+Agent language)
     const active = agents.filter(a => a.online).length;
     if (statsEl) statsEl.textContent = `${active} 活跃 / ${agents.length} 成员`;

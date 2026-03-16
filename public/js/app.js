@@ -160,20 +160,27 @@ const ScopeManager = {
     });
   },
 
+  // #107: scope match supports both string and array (agent may belong to multiple orgs)
+  _matchScope(item) {
+    if (!item.scope && !item.scopes) return true; // no scope = show everywhere
+    if (Array.isArray(item.scopes)) return item.scopes.includes(this.activeScope);
+    return item.scope === this.activeScope;
+  },
+
   filter(items) {
     if (!this.activeScope || this.scopes.length <= 1) return items;
-    return items.filter(i => !i.scope || i.scope === this.activeScope);
+    return items.filter(i => this._matchScope(i));
   },
 
   filterBoard(board) {
     if (!this.activeScope || this.scopes.length <= 1) return board;
-    const f = arr => (arr || []).filter(t => !t.scope || t.scope === this.activeScope);
+    const f = arr => (arr || []).filter(t => this._matchScope(t));
     return { todo: f(board.todo), doing: f(board.doing), done: f(board.done) };
   },
 
   filterGraph(graph) {
     if (!this.activeScope || this.scopes.length <= 1) return graph;
-    const nodes = (graph.nodes || []).filter(n => !n.scope || n.scope === this.activeScope);
+    const nodes = (graph.nodes || []).filter(n => this._matchScope(n));
     const nodeNames = new Set(nodes.map(n => n.name || n.id));
     const edges = (graph.edges || []).filter(e => nodeNames.has(e.source) && nodeNames.has(e.target));
     return { nodes, edges };
@@ -502,11 +509,13 @@ const App = {
   },
 
   renderTeam() {
-    // Team page shows ALL agents (with search/status filter), scoped (#100)
+    // Team page: scoped (#100) + global agent filter (#91) + search/status filter
     const search = (document.getElementById('team-search')?.value || '').toLowerCase();
     const statusFilter = document.getElementById('team-status-filter')?.value || 'all';
 
+    const filter = AgentFilter.getFilter('team');
     let agents = ScopeManager.filter(this.data.team);
+    if (filter) agents = agents.filter(a => filter.has(a.name));
     if (search) {
       agents = agents.filter(a =>
         (a.name || '').toLowerCase().includes(search) ||
