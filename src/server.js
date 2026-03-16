@@ -32,6 +32,7 @@ const pipelineRoutes = require('./routes/pipeline');
 const mrBoardRoutes = require('./routes/mr-board');
 const projectRoutes = require('./routes/projects');
 const { buildProjects } = projectRoutes;
+const overviewRoutes = require('./routes/overview');
 
 const PORT = process.env.PORT || 3479;
 
@@ -124,6 +125,7 @@ app.use('/api/live', liveRoutes);
 app.use('/api/pipeline', pipelineRoutes);
 app.use('/api/mr-board', mrBoardRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/overview', overviewRoutes);
 app.use('/api', reportRoutes.router);
 
 // GET /api/about — version and system info (#108)
