@@ -34,6 +34,7 @@ const projectRoutes = require('./routes/projects');
 const { buildProjects } = projectRoutes;
 const overviewRoutes = require('./routes/overview');
 const agentHealthRoutes = require('./routes/agent-health');
+const healthWatchdog = require('./health-watchdog');
 
 const PORT = process.env.PORT || 3479;
 
@@ -128,6 +129,11 @@ app.use('/api/mr-board', mrBoardRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/overview', overviewRoutes);
 app.use('/api/agent-health', agentHealthRoutes);
+
+// Health watchdog alerts endpoint (#129)
+app.get('/api/health-watchdog/alerts', (req, res) => {
+  res.json(healthWatchdog.getAlerts());
+});
 app.use('/api', reportRoutes.router);
 
 // GET /api/about — version and system info (#108)
@@ -270,6 +276,10 @@ async function startPolling() {
   // Start auto-assign engine (#61 + #74: pass ws for unassigned broadcasts)
   autoAssignEngine.init(config, ws);
   autoAssignEngine.start();
+
+  // Start health watchdog (#129: agent health monitoring + alerting)
+  healthWatchdog.init(ws);
+  healthWatchdog.start();
 
   // Connect polling (30s) — all scopes in parallel (#100)
   setInterval(async () => {
