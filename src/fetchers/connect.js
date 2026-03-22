@@ -39,12 +39,12 @@ async function fetchAgents() {
     const changes = [];
 
     for (const bot of bots) {
-      // Only show team members registered in entities.json (#75)
+      // Auto-register unknown Connect bots (#131 — allow all Connect agents)
+      entity.ensureFromConnect(bot.name);
       const ent = entity.get(bot.name);
-      if (!ent) continue;
 
       // Use entity meta as fallback for missing role/bio
-      const entMeta = ent.meta || {};
+      const entMeta = ent?.meta || {};
 
       const prev = db.getAgent(bot.name);
       const agent = {
@@ -64,10 +64,10 @@ async function fetchAgents() {
       db.upsertAgent(agent);
     }
 
-    // Purge stale agents not in entities.json (#75)
-    const registeredIds = new Set(entity.getAll().map(e => e.id));
+    // Purge agents no longer in Connect (#131 — use Connect as source of truth)
+    const connectBotNames = new Set(bots.map(b => b.name));
     for (const agent of db.getAllAgents()) {
-      if (!registeredIds.has(agent.name)) {
+      if (!agent.scope && !connectBotNames.has(agent.name)) {
         db.removeAgent(agent.name);
       }
     }
@@ -99,9 +99,10 @@ function create(connectConfig, scopeId) {
       const changes = [];
 
       for (const bot of bots) {
+        // Auto-register unknown Connect bots (#131)
+        entity.ensureFromConnect(bot.name);
         const ent = entity.get(bot.name);
-        if (!ent) continue;
-        const entMeta = ent.meta || {};
+        const entMeta = ent?.meta || {};
 
         const prev = db.getAgent(bot.name);
         const agent = {
@@ -122,10 +123,10 @@ function create(connectConfig, scopeId) {
         db.upsertAgent(agent);
       }
 
-      // Purge stale agents — only within this scope (#100 P2)
-      const registeredIds = new Set(entity.getAll().map(e => e.id));
+      // Purge agents no longer in Connect — only within this scope (#131)
+      const connectBotNames = new Set(bots.map(b => b.name));
       for (const agent of db.getAllAgents()) {
-        if (agent.scope === scope && !registeredIds.has(agent.name)) {
+        if (agent.scope === scope && !connectBotNames.has(agent.name)) {
           db.removeAgent(agent.name);
         }
       }
