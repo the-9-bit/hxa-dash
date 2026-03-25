@@ -563,6 +563,123 @@ const getCompletionStats = (days = 30) => {
   };
 };
 
+// Per-agent daily output time-series (#127)
+const getAgentDailyOutput = (agentName, days = 30) => {
+  const now = Date.now();
+  const sinceMs = now - days * 86400000;
+  const events = getEventsInWindow(sinceMs, agentName);
+  const tasks = [...store.tasks.values()];
+
+  // Build per-day buckets
+  const dayMap = new Map();
+  const dayKey = (ts) => Math.floor(ts / 86400000) * 86400000;
+
+  // Pre-fill all days
+  for (let t = dayKey(sinceMs); t <= now; t += 86400000) {
+    dayMap.set(t, { timestamp: t, events: 0, commits: 0, comments: 0, issues_closed: 0, mrs_merged: 0 });
+  }
+
+  // Count events per day
+  for (const e of events) {
+    const k = dayKey(e.timestamp);
+    const b = dayMap.get(k);
+    if (!b) continue;
+    b.events++;
+    if (e.action === 'pushed') b.commits++;
+    else if (e.action === 'commented') b.comments++;
+    else if (e.action === 'issue_closed') b.issues_closed++;
+    else if (e.action === 'mr_merged') b.mrs_merged++;
+  }
+
+  // Also count closed/merged tasks per day (by updated_at)
+  const agentTasks = tasks.filter(t =>
+    (t.state === 'closed' || t.state === 'merged') &&
+    t.updated_at >= sinceMs &&
+    (t.assignee === agentName || t.author === agentName)
+  );
+  for (const t of agentTasks) {
+    const k = dayKey(t.updated_at);
+    const b = dayMap.get(k);
+    if (!b) continue;
+    if (t.type === 'issue') b.issues_closed++;
+    if (t.type === 'mr') b.mrs_merged++;
+  }
+
+  // Compute health score per day (simplified: based on that day's activity)
+  const allAgentTasks = tasks.filter(t => t.assignee === agentName || t.author === agentName);
+  const closedAll = allAgentTasks.filter(t => t.state === 'closed' || t.state === 'merged');
+  const openAll = allAgentTasks.filter(t => t.state === 'opened');
+
+  const buckets = [...dayMap.values()].sort((a, b) => a.timestamp - b.timestamp);
+
+  // Period comparison: current vs previous
+  const halfDays = Math.floor(days / 2);
+  const midpoint = now - halfDays * 86400000;
+  let currentTotal = 0, previousTotal = 0;
+  for (const b of buckets) {
+    if (b.timestamp >= midpoint) currentTotal += b.events;
+    else previousTotal += b.events;
+  }
+  const changePct = previousTotal > 0 ? Math.round(((currentTotal - previousTotal) / previousTotal) * 100) : null;
+
+  return {
+    agent: agentName,
+    days,
+    buckets,
+    summary: {
+      total_events: events.length,
+      commits: events.filter(e => e.action === 'pushed').length,
+      comments: events.filter(e => e.action === 'commented').length,
+      issues_closed: agentTasks.filter(t => t.type === 'issue').length,
+      mrs_merged: agentTasks.filter(t => t.type === 'mr').length,
+      health_score: computeHealthScore(
+        store.events.filter(e => e.agent === agentName).slice(0, 5),
+        closedAll, openAll, now
+      ),
+      change_pct: changePct,
+    },
+  };
+};
+
+// Simplified health score for db module (mirrors team.js computeHealthScore)
+function computeHealthScore(recentEvents, closedTasks, openTasks, now) {
+  let activityScore = 0;
+  if (recentEvents.length > 0) {
+    const hoursSince = (now - (recentEvents[0].timestamp || 0)) / 3600000;
+    if (hoursSince < 1) activityScore = 40;
+    else if (hoursSince < 6) activityScore = 35;
+    else if (hoursSince < 24) activityScore = 25;
+    else if (hoursSince < 72) activityScore = 15;
+    else if (hoursSince < 168) activityScore = 5;
+  }
+  let completionScore = 0;
+  const total = closedTasks.length + openTasks.length;
+  if (total > 0) completionScore = Math.round((closedTasks.length / total) * 30);
+  let loadScore = 0;
+  const oc = openTasks.length;
+  if (oc === 0) loadScore = 10;
+  else if (oc <= 3) loadScore = 30;
+  else if (oc <= 5) loadScore = 20;
+  else if (oc <= 8) loadScore = 10;
+  else loadScore = 5;
+  return Math.min(100, activityScore + completionScore + loadScore);
+}
+
+// Get 7-day daily activity counts for sparkline display (#127)
+const getAgentSparkline7d = (agentName) => {
+  const now = Date.now();
+  const sevenDaysAgo = now - 7 * 86400000;
+  const events = getEventsInWindow(sevenDaysAgo, agentName);
+  const dayKey = (ts) => Math.floor(ts / 86400000) * 86400000;
+  const buckets = new Map();
+  for (let t = dayKey(sevenDaysAgo); t <= now; t += 86400000) buckets.set(t, 0);
+  for (const e of events) {
+    const k = dayKey(e.timestamp);
+    if (buckets.has(k)) buckets.set(k, buckets.get(k) + 1);
+  }
+  return [...buckets.values()];
+};
+
 // Agent health operations (#115)
 const upsertAgentHealth = (name, health) => {
   store.agent_health.set(name, { ...health, reported_at: Date.now() });
@@ -592,5 +709,6 @@ module.exports = {
   getUnassignedIssues,
   getSessionVelocity, getSessionSummary, getCompletionStats,
   upsertAgentHealth, getAgentHealth, getAllAgentHealth,
+  getAgentDailyOutput, getAgentSparkline7d,
   ESTIMATE_SESSIONS, ESTIMATE_MINUTES,
 };

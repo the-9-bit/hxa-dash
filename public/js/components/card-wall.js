@@ -22,7 +22,8 @@ const CardWall = {
       (agent.tags || []).join('|'),
       (agent.top_collaborator || {}).name,
       agent.last_active_at || '',
-      bmrs
+      bmrs,
+      (agent.sparkline_7d || []).join(',')
     ].join('\x1f');
   },
 
@@ -186,10 +187,14 @@ const CardWall = {
       </div>
     `;
 
+    const sparklineHTML = (typeof MemberOutput !== 'undefined' && agent.sparkline_7d)
+      ? MemberOutput.renderMiniSparkline(agent.sparkline_7d)
+      : '';
+
     const avgTime = stats.avg_completion_ms ? this.formatDuration(stats.avg_completion_ms) : '—';
     const historyHTML = (stats.closed_last_7d != null || stats.closed_last_30d != null) ? `
       <details class="card-history" onclick="event.stopPropagation()">
-        <summary class="history-toggle">📊 历史统计</summary>
+        <summary class="history-toggle">📊 历史统计 ${sparklineHTML}</summary>
         <div class="history-grid">
           <span class="history-label">近 7 天</span><span class="history-value">${stats.closed_last_7d || 0} 完成</span>
           <span class="history-label">近 30 天</span><span class="history-value">${stats.closed_last_30d || 0} 完成</span>

@@ -22,8 +22,23 @@ const DetailDrawer = {
       const data = await res.json();
       this.renderDetail(data);
       this.drawer.classList.remove('hidden');
+
+      // Async-load output trends (#127)
+      this._loadOutputSection(name);
     } catch (err) {
       console.error('Failed to load agent detail:', err);
+    }
+  },
+
+  async _loadOutputSection(name) {
+    const placeholder = document.getElementById('drawer-output-section');
+    if (!placeholder) return;
+    placeholder.innerHTML = '<div class="output-loading">加载产出数据…</div>';
+    const data = await MemberOutput.fetch(name);
+    if (data) {
+      placeholder.innerHTML = MemberOutput.renderSection(data);
+    } else {
+      placeholder.innerHTML = '';
     }
   },
 
@@ -126,6 +141,8 @@ const DetailDrawer = {
           </div>
         </div>
       </div>
+
+      <div id="drawer-output-section"></div>
 
       ${current_tasks.length > 0 ? `
         <div class="drawer-section">

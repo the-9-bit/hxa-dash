@@ -80,6 +80,7 @@ function buildAgents() {
         timestamp: latestEvent.timestamp,
         project: latestEvent.project
       } : null,
+      sparkline_7d: db.getAgentSparkline7d(a.name),
       stats: {
         open_tasks: openTasks.length,
         closed_tasks: closedTasks.length,
@@ -107,6 +108,16 @@ router.get('/', (req, res) => {
       offline: agents.length - online
     }
   });
+});
+
+// GET /api/team/:name/output — per-agent daily output time-series (#127)
+router.get('/:name/output', (req, res) => {
+  const agent = db.getAgent(req.params.name);
+  if (!agent) return res.status(404).json({ error: 'Agent not found' });
+
+  const days = Math.min(parseInt(req.query.days) || 30, 90);
+  const output = db.getAgentDailyOutput(agent.name, days);
+  res.json(output);
 });
 
 // GET /api/team/:name — single agent detail
