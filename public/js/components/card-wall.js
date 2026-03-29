@@ -117,6 +117,7 @@ const CardWall = {
       : '<span class="kind-badge kind-agent" title="Agent">🤖</span>';
 
     // 3-tier status badge (#136): active (GitLab) / online (Connect) / offline
+    const workStatus = agent.work_status || 'idle';
     const tierStatus = agent.tier_status || (agent.online ? 'online' : 'offline');
     const tierLabels = { active: '🟢 活跃', online: '🟡 在线', offline: '⚫ 离线' };
     const statusLabel = tierLabels[tierStatus] || tierLabels.offline;
