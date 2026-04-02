@@ -63,14 +63,47 @@ function buildOverview() {
   // Recent timeline
   const timeline = db.getTimeline(10);
 
-  // Agent details
+  // Agent details — status logic (#135):
+  //   busy: Connect online + git activity within 4h + has open tasks
+  //   idle: Connect online + no recent activity OR no open tasks
+  //   inactive: Connect online but >24h without git activity
+  //   offline: Connect not online
+  const agentStats = db.getAgentStats();
+  const agentStatsMap = new Map(agentStats.map(s => [s.name, s]));
+  const fourHoursAgo = now - 4 * 3600000;
+  const twentyFourHoursAgo = now - 24 * 3600000;
+  const sevenDaysAgo = now - 7 * 86400000;
+
   const agentSummaries = agents.map(a => {
     const myTasks = openTasks.filter(t => t.assignee === a.name);
+    const stats = agentStatsMap.get(a.name);
+    const lastActive = stats?.last_active || null;
+    const hasRecentActivity = lastActive && lastActive > fourHoursAgo;
+    const hasAnyDayActivity = lastActive && lastActive > twentyFourHoursAgo;
+
+    let status;
+    if (!a.online) {
+      status = 'offline';
+    } else if (hasRecentActivity && myTasks.length > 0) {
+      status = 'busy';
+    } else if (!hasAnyDayActivity) {
+      status = 'inactive';
+    } else {
+      status = 'idle';
+    }
+
+    // Activity metrics (#135)
+    const agentEvents = db.getEventsInWindow(sevenDaysAgo, a.name);
+    const closedInWindow = db.getTasksClosedInWindow(sevenDaysAgo, a.name);
+
     return {
       name: a.name,
       online: a.online,
-      status: !a.online ? 'offline' : myTasks.length > 0 ? 'busy' : 'idle',
+      status,
       open_tasks: myTasks.length,
+      last_active_at: lastActive,
+      events_7d: agentEvents.length,
+      closed_7d: closedInWindow.length,
       current_work: myTasks.map(t => ({
         title: t.title,
         url: t.url,
@@ -148,11 +181,13 @@ function toText(data) {
   // Agents
   lines.push(`## Agents`);
   for (const a of data.agents) {
-    const icon = a.status === 'busy' ? '🟢' : a.status === 'idle' ? '⚪' : '⚫';
+    const icon = a.status === 'busy' ? '🟢' : a.status === 'idle' ? '⚪' : a.status === 'inactive' ? '🟡' : '⚫';
     const work = a.current_work.length > 0
       ? a.current_work.map(w => `${w.title} (${w.project})`).join(', ')
       : 'no tasks';
-    lines.push(`${icon} ${a.name} [${a.status}]: ${work}`);
+    const lastActive = a.last_active_at ? new Date(a.last_active_at).toISOString().slice(0, 16) : 'never';
+    const metrics = `events_7d: ${a.events_7d ?? 0}, closed_7d: ${a.closed_7d ?? 0}`;
+    lines.push(`${icon} ${a.name} [${a.status}]: ${work} | last: ${lastActive} | ${metrics}`);
   }
   lines.push('');
 

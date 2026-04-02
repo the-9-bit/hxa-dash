@@ -136,7 +136,7 @@ const Metrics = {
   },
 
   _statusLabel(s) {
-    return s === 'busy' ? '进行中' : s === 'idle' ? '空闲' : '离线';
+    return s === 'busy' ? '进行中' : s === 'idle' ? '空闲' : s === 'inactive' ? '不活跃' : '离线';
   },
 
   _renderTrend(weeks) {

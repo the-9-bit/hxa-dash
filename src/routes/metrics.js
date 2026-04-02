@@ -100,7 +100,16 @@ function computeMetrics() {
       (t.assignee === a.name || t.author === a.name)
     ).length;
 
-    const status = !a.online ? 'offline' : openTasks > 0 ? 'busy' : 'idle';
+    // 4-tier status (#135)
+    const agentEvents = db.getEventsInWindow(since7d, a.name);
+    const latestEvt = agentEvents.length > 0 ? Math.max(...agentEvents.map(e => e.timestamp || 0)) : 0;
+    const hasRecent4h = latestEvt > (now - 4 * 3600000);
+    const hasRecent24h = latestEvt > (now - 24 * 3600000);
+    let status;
+    if (!a.online) status = 'offline';
+    else if (hasRecent4h && openTasks > 0) status = 'busy';
+    else if (!hasRecent24h) status = 'inactive';
+    else status = 'idle';
 
     return {
       name: a.name,

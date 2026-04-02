@@ -19,11 +19,30 @@ function buildAgents() {
     const recentEvents = db.getEventsForAgent(a.name, 5);
     const latestEvent = recentEvents[0] || null;
 
-    // Work status: busy (has assigned open tasks) / idle / offline
-    const workStatus = !a.online ? 'offline' : openTasks.length > 0 ? 'busy' : 'idle';
-
     // Historical stats (#39)
     const now = Date.now();
+
+    // Work status (#135): 4-tier based on git activity + online + tasks
+    //   busy: Connect online + git activity within 4h + has open tasks
+    //   idle: Connect online + no recent activity OR no open tasks
+    //   inactive: Connect online but >24h without git activity
+    //   offline: Connect not online
+    const fourHoursAgo = now - 4 * 3600000;
+    const twentyFourHoursAgo = now - 24 * 3600000;
+    const latestEventTs = (latestEvent && latestEvent.timestamp) || 0;
+    const hasRecentActivity = latestEventTs > fourHoursAgo;
+    const hasAnyDayActivity = latestEventTs > twentyFourHoursAgo;
+
+    let workStatus;
+    if (!a.online) {
+      workStatus = 'offline';
+    } else if (hasRecentActivity && openTasks.length > 0) {
+      workStatus = 'busy';
+    } else if (!hasAnyDayActivity) {
+      workStatus = 'inactive';
+    } else {
+      workStatus = 'idle';
+    }
 
     // 3-tier status (#136): active (GitLab 30min) / online (Connect online) / offline
     const thirtyMinAgo = now - 30 * 60 * 1000;
@@ -60,6 +79,10 @@ function buildAgents() {
     // Last active time: most recent event timestamp (#98)
     const lastActiveAt = latestEvent ? latestEvent.timestamp : (a.last_seen_at || null);
 
+    // Activity metrics (#135): events and closed tasks in last 7 days
+    const events7d = db.getEventsInWindow(sevenDays, a.name);
+    const closed7d = db.getTasksClosedInWindow(sevenDays, a.name);
+
     return {
       ...a,
       tags: safeJSON(a.tags),
@@ -71,6 +94,8 @@ function buildAgents() {
       capacity,
       health_score: healthScore,
       last_active_at: lastActiveAt,
+      events_7d: events7d.length,
+      closed_7d: closed7d.length,
       blocking_mrs: blockingMRs,
       current_tasks: openTasks.slice(0, 3).map(t => ({
         title: t.title,

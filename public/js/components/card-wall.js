@@ -22,6 +22,8 @@ const CardWall = {
       (agent.tags || []).join('|'),
       (agent.top_collaborator || {}).name,
       agent.last_active_at || '',
+      agent.events_7d || 0,
+      agent.closed_7d || 0,
       bmrs,
       (agent.sparkline_7d || []).join(','),
       agent.hardware ? `${agent.hardware.disk_pct}|${agent.hardware.mem_pct}|${agent.hardware.cpu_pct}` : ''
@@ -116,11 +118,12 @@ const CardWall = {
       ? '<span class="kind-badge kind-human" title="Human">🧑</span>'
       : '<span class="kind-badge kind-agent" title="Agent">🤖</span>';
 
-    // 3-tier status badge (#136): active (GitLab) / online (Connect) / offline
+    // 4-tier status badge (#135): busy / idle / inactive / offline
     const workStatus = agent.work_status || 'idle';
     const tierStatus = agent.tier_status || (agent.online ? 'online' : 'offline');
+    const statusLabels = { busy: '🔴 繁忙', idle: '🟢 空闲', inactive: '🟡 不活跃', offline: '⚫ 离线' };
     const tierLabels = { active: '🟢 活跃', online: '🟡 在线', offline: '⚫ 离线' };
-    const statusLabel = tierLabels[tierStatus] || tierLabels.offline;
+    const statusLabel = statusLabels[workStatus] || tierLabels[tierStatus] || tierLabels.offline;
 
     const hs = agent.health_score != null ? agent.health_score : null;
     const hsClass = hs != null ? (hs > 70 ? 'health-green' : hs >= 40 ? 'health-yellow' : 'health-red') : '';
@@ -205,6 +208,16 @@ const CardWall = {
       </div>
     `;
 
+    // Activity metrics (#135): events and closed tasks in last 7 days
+    const events7d = agent.events_7d;
+    const closed7d = agent.closed_7d;
+    const activityMetricsHTML = (events7d != null || closed7d != null) ? `
+      <div class="card-activity-metrics">
+        <span class="card-stat" title="近 7 天事件数">⚡ ${events7d || 0} 事件/7d</span>
+        <span class="card-stat" title="近 7 天完成数">🏁 ${closed7d || 0} 完成/7d</span>
+      </div>
+    ` : '';
+
     const sparklineHTML = (typeof MemberOutput !== 'undefined' && agent.sparkline_7d)
       ? MemberOutput.renderMiniSparkline(agent.sparkline_7d)
       : '';
@@ -262,6 +275,7 @@ const CardWall = {
         ${projectsHTML}
         ${collabHTML}
         ${statsHTML}
+        ${activityMetricsHTML}
         ${historyHTML}
         ${tasksHTML}
         ${activityHTML}
