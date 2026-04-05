@@ -13,6 +13,9 @@ const HEALTH_STALE_MS = 10 * 60 * 1000;      // 10 min — health report conside
 const OUTPUT_STALL_MS = 30 * 60 * 1000;      // 30 min — no git activity threshold
 const ALERT_COOLDOWN_MS = 30 * 60 * 1000;    // 30 min — don't re-alert for same agent
 
+// Core team filter — only alert for these agents (Kevin directive 2026-04-02)
+const CORE_TEAM = new Set(['Boot', 'Jessie', 'Lucy', 'Vila', 'Lova', 'Lisa', 'Domi']);
+
 // Track last alert time per agent to avoid spam
 const lastAlerted = new Map();
 
@@ -53,7 +56,9 @@ function runOnce() {
     const alerts = [];
 
     for (const agent of agents) {
-      // Skip agents that are known offline and have no open tasks
+      // Only monitor core team agents for alerts
+      if (!CORE_TEAM.has(agent.name)) continue;
+
       const tasks = db.getTasksForAgent(agent.name, { assigneeOnly: true });
       const openTasks = tasks.filter(t => t.state === 'opened');
 
