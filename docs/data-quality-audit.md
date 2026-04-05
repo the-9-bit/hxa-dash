@@ -1,7 +1,7 @@
 # HxA Dash 数据质量审计报告
 
 **审计时间**: 2026-03-14  
-**审计人**: Lisa  
+**审计人**: QA-1  
 **范围**: config/entities.json 数据源准确性 + API 展示数据 vs GitLab 实际数据对比
 
 ---
@@ -16,7 +16,7 @@
 
 ### 问题描述
 
-`entities.json` 中 Jessie 配置了 `"kind": "human"`，但 dashboard API 返回 `kind: "agent"`，导致 Jessie 显示 🤖 而非 🧑。
+`entities.json` 中 Lead 配置了 `"kind": "human"`，但 dashboard API 返回 `kind: "agent"`，导致 Lead 显示 🤖 而非 🧑。
 
 ### 根因
 
@@ -58,7 +58,7 @@ register(cfg.id, cfg.identities || {}, {
 ### 影响范围
 
 - 所有 `kind: 'human'` 配置均不生效
-- 当前仅 Jessie 配置了 `kind: 'human'`，她在 Card Wall 显示 🤖（应显示 🧑）
+- 当前仅 Lead 配置了 `kind: 'human'`，她在 Card Wall 显示 🤖（应显示 🧑）
 - **MR !24 的 kind fix 只修了 entities.json，未修 entity.js 的传递逻辑**
 
 ### 优先级
@@ -67,11 +67,11 @@ register(cfg.id, cfg.identities || {}, {
 
 ---
 
-## 🟡 发现 #2：dashboard 展示了 31 个成员，大量非 hxanet 成员
+## 🟡 发现 #2：dashboard 展示了 31 个成员，大量非 my-org 成员
 
 ### 问题描述
 
-API `/api/team` 返回 31 个成员，其中 hxanet 核心团队（7 人）之外还有 24 个来自其他 org 的 bot（`zylos*`、`AllenBot`、`DanielBot` 等）。
+API `/api/team` 返回 31 个成员，其中 my-org 核心团队（7 人）之外还有 24 个来自其他 org 的 bot（`zylos*`、`AllenBot`、`DanielBot` 等）。
 
 ### 原因
 
@@ -79,11 +79,11 @@ HxA Connect 使用共享 hub，所有 org 的 bot 都出现在 `/hub/agents` 响
 
 ### 当前状态
 
-功能上不影响——非 hxanet 成员没有 GitLab 任务数据，显示为 idle。但 Card Wall 展示 31 人降低了信噪比。
+功能上不影响——非 my-org 成员没有 GitLab 任务数据，显示为 idle。但 Card Wall 展示 31 人降低了信噪比。
 
 ### 建议
 
-在 `connectFetcher` 中按 `config.connect.org` 过滤，只展示 hxanet org 下的成员；或在 entities.json 中配置白名单。
+在 `connectFetcher` 中按 `config.connect.org` 过滤，只展示 my-org org 下的成员；或在 entities.json 中配置白名单。
 
 ### 优先级
 
@@ -130,7 +130,7 @@ W08/W09/W10 全为 0，但 W11 有大量数据（81 issues closed）。
 
 ### 现象
 
-24 个非 hxanet 成员全部显示 `health_score: 10`。
+24 个非 my-org 成员全部显示 `health_score: 10`。
 
 ### 原因
 
@@ -143,7 +143,7 @@ W08/W09/W10 全为 0，但 W11 有大量数据（81 issues closed）。
 
 ### 建议
 
-可考虑对无 GitLab 数据的成员单独标注，或从 Card Wall 中过滤。目前行为合理，不影响 hxanet 成员数据。
+可考虑对无 GitLab 数据的成员单独标注，或从 Card Wall 中过滤。目前行为合理，不影响 my-org 成员数据。
 
 ### 优先级
 
@@ -155,11 +155,11 @@ W08/W09/W10 全为 0，但 W11 有大量数据（81 issues closed）。
 
 | 检查项 | 方式 | 结果 |
 |--------|------|------|
-| Boot open tasks = 1 | API capacity.current vs GitLab | ✅ 一致（#64 行动建议 ClawMark）|
+| Agent-1 open tasks = 1 | API capacity.current vs GitLab | ✅ 一致（#64 行动建议 ClawMark）|
 | vila open tasks = 3 | API vs GitLab | ✅ 一致 |
 | lova open tasks = 3 | API vs GitLab | ✅ 一致 |
-| Jessie closed_7d 最多（56）| API stats | ✅ 符合实际（大量 MR review + issue 关闭）|
-| Boot closed_7d = 27 | API stats | ✅ 符合实际（#162/#189/#192 + hxa-dash MRs）|
+| Lead closed_7d 最多（56）| API stats | ✅ 符合实际（大量 MR review + issue 关闭）|
+| Agent-1 closed_7d = 27 | API stats | ✅ 符合实际（#162/#189/#192 + hxa-dash MRs）|
 | Health score 算法 | 代码审查 | ✅ 逻辑正确（3 维度：活动新鲜度/完成率/负载）|
 | XSS 防护 | 代码审查 | ✅ 所有用户数据经 `esc()` 处理 |
 | auto-assign 历史 | API `/api/auto-assign/history` | ✅ 端点正常响应 |
@@ -171,7 +171,7 @@ W08/W09/W10 全为 0，但 W11 有大量数据（81 issues closed）。
 | 序号 | 问题 | 优先级 | 修复估时 |
 |------|------|--------|---------|
 | 1 | `kind` 字段不传递（entity.js bug）| 🔴 高 | 5 分钟 |
-| 2 | Card Wall 展示非 hxanet 成员 | 🟡 中 | 1 小时 |
+| 2 | Card Wall 展示非 my-org 成员 | 🟡 中 | 1 小时 |
 | 3 | 4 周趋势历史数据不完整 | 🟡 中 | 2 小时 |
 | 4 | 空闲成员健康评分偏低 | 🟢 低 | 按需 |
 

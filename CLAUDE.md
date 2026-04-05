@@ -4,12 +4,19 @@ This file is automatically loaded by Claude Code on every session start. Rules h
 
 ## Project Overview
 
-hxa-dash is the Agent Team Visualization Dashboard — a real-time web dashboard showing agent team activity, task progress, and collaboration patterns across GitLab projects.
+hxa-dash is the Human-Agent Team Visualization Dashboard — a real-time web dashboard showing agent team activity, task progress, and collaboration patterns across GitLab projects.
 
 - **Stack**: Node.js + Express + Socket.IO + vanilla JS frontend
 - **Data sources**: GitLab API (issues, MRs, commits, pipelines) via polling + webhooks
-- **Deploy**: PM2 (hxa-dash), port 3479, jessie.coco.site/hxa-dash/
-- **GitLab**: git.coco.xyz/hxanet/hxa-dash (project ID 9)
+- **Deploy**: PM2 (`hxa-dash`), port 3479
+
+## Architecture Notes
+
+- `src/server.js` — Express + Socket.IO server, GitLab API polling
+- `src/webhook.js` — GitLab webhook handler
+- `public/` — Frontend (vanilla JS, no build step)
+- `config/sources.json` — GitLab/Connect data source configuration (not committed)
+- `config/entities.json` — Team member identity mapping (connect + gitlab usernames)
 
 ## Mandatory Rules
 
@@ -31,108 +38,31 @@ Types: `feat`, `fix`, `docs`, `chore`, `test`, `refactor`
   - What changed and why (1-2 sentences)
   - Issue reference (`Closes #XX`)
   - Test evidence (screenshot, before/after comparison, or test output)
-- **After creating MR:** Immediately ping a reviewer via HxA Connect
 - **Chore/docs MRs:** Author can self-merge
 - **Code MRs:** Need 1 peer review before merge
 
-### 3. Review SLA
-
-- **2 hours** max to respond to a review request
-- **4 hours** max to merge or provide feedback
-- If reviewer unresponsive after 2h, escalate to Jessie
-
-### 4. Self-Sufficiency
-
-- Do NOT wait for Jessie to review or merge if you can handle it yourself
-- If pipeline fails due to runner issues (not code), report it and request bypass
-- If blocked, comment on the issue immediately
-
-### 5. UI Changes
+### 3. UI Changes
 
 - Test in browser before submitting MR
 - Attach screenshot showing the change works
 - Check for console errors
 - Verify Socket.IO real-time updates still work after changes
 
-### 6. Data Accuracy
+### 4. Data Accuracy
 
 - Polling data and webhook data must produce identical results
 - Test with manual refresh AND automatic polling to verify consistency
-- Entity mapping (agent identities across GitLab/Connect/GitHub) must be verified
+- Entity mapping (agent identities across GitLab/Connect) must be verified
 
-### 7. Communication
+### 5. Design-First for Architecture Changes
+
+- Feature requests involving data model changes, new API endpoints, or multi-component refactors — write design doc first
+- Design doc goes in `docs/` directory
+- Design must be reviewed before implementation starts
+- Small bug fixes and UI tweaks — direct implementation OK
+
+### 6. Communication
 
 - All work tracked as GitLab issues
-- Report progress in HxA Connect threads
-- When done with a task, close the issue and notify in the thread
-
-### 8. Blocker SLA — No Idle Waiting (Agent-Scale Time)
-
-- **5 minutes**: Blocker appears → someone MUST pick it up
-- **10 minutes**: MR review notes pending with no response → fix directly and merge
-- **15 minutes**: MR pipeline passed, no reviewer → auto-escalate to Jessie/Boot
-- **30 minutes**: MR open with zero activity → reassign to available agent
-- **Proactive handoff**: See a stalled MR or blocked task → take ownership immediately
-
-### 9. Decentralized Issue Claiming
-
-- Every agent session start: scan unassigned issues on hxa-dash, hxa-link, ClawMark
-- See unassigned issue → assess fit → self-assign on GitLab + start working
-- Do NOT wait for Jessie to assign. First come, first served.
-- 15min unassigned → auto-escalate. 30min → Jessie force-assigns.
-- Assignment MUST be on GitLab (not just verbal in thread).
-
-### 10. Deploy Self-Check
-
-After merging code MRs:
-1. `git pull origin main` on jessie.coco.site
-2. `pm2 restart hxa-dash`
-3. Verify: page loads, no console errors, WebSocket connects, data refreshes
-4. If CSS broken → check for unclosed `{}` or missing imports (common regression)
-
-### 11. Design-First for Architecture Changes
-
-- Feature requests involving data model changes, new API endpoints, or multi-component refactors → write design doc first
-- Design doc goes in `docs/` directory
-- Kevin reviews design before implementation starts
-- Small bug fixes and UI tweaks → direct implementation OK
-
-### 12. Issue Lifecycle (Label-Driven Workflow)
-
-Every issue follows this workflow, enforced via `workflow::` labels:
-
-```
-workflow::new → workflow::triaged → workflow::planned → workflow::approved → workflow::in-progress → workflow::in-review → workflow::needs-QA → closed
-```
-
-**Stage responsibilities:**
-
-| Stage | Who | Action |
-|-------|-----|--------|
-| `new → triaged` | Jessie (lead) | Classify bug/feature/chore, set priority, assign agent |
-| `triaged → planned` | Assigned agent | Comment a Plan on the issue: bug → confirm reproduction + fix approach; feature → approach + impact + estimate (S/M/L) |
-| `planned → approved` | Lead + 1 human/QA | Requires 2/3 approvals (lead agent + at least 1 human or QA agent). Rejection → back to `planned` |
-| `approved → in-progress` | Assigned agent | Start coding, create MR with `Relates to #XX` (not `Closes`) |
-| `in-progress → in-review` | Assigned agent | MR submitted, awaiting peer review |
-| `in-review → needs-QA` | Reviewer | MR merged → add `workflow::needs-QA` label |
-| `needs-QA → closed` | QA (Lisa/Domi) | Verify on staging → close issue |
-
-**Rules:**
-- No coding starts before `workflow::approved`. If you receive an assigned issue, write a Plan first.
-- Only one `workflow::` label active at a time. Remove the previous label when advancing.
-- If an issue is rejected at `planned → approved`, the agent must revise the Plan and re-request approval.
-- Estimates use the S (~20min) / M (~45min) / L (~90min) scale.
-
-## Architecture Notes
-
-- `src/server.js` — Express + Socket.IO server, GitLab API polling
-- `src/webhook.js` — GitLab webhook handler
-- `public/` — Frontend (vanilla JS, no build step)
-- `config/sources.json` — GitLab project data sources
-- `data/agents.json` — Agent identity mapping (connect + gitlab + github usernames)
-
-## Team
-
-- **Boot** — Primary developer for hxa-dash
-- **Jessie** — Project lead, architecture
-- **Kevin** — Product owner, UX feedback
+- Report progress on issue threads
+- When done with a task, close the issue and leave a summary comment

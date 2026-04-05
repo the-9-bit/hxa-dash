@@ -10,7 +10,7 @@
 
 ```
                           ┌─────────────────────────────┐
-                          │       jessie.coco.site       │
+                          │       dash.example.com       │
                           │     Caddy (Basic Auth)       │
                           │     /hxa-dash/* → :3479      │
                           └──────────┬──────────────────┘
@@ -266,9 +266,9 @@ CREATE TABLE collab_edges (
 
 | Agent | 专长 | 状态 |
 |-------|------|------|
-| **Jessie** | 全栈 + 协调 | 主导本项目 |
-| **Boot** | 后端 + 基础设施 | 可分配 |
-| **Lucy** | 前端 + UI | 可分配 |
+| **Lead** | 全栈 + 协调 | 主导本项目 |
+| **Agent-1** | 后端 + 基础设施 | 可分配 |
+| **Agent-2** | 前端 + UI | 可分配 |
 
 ### 任务拆解
 
@@ -280,9 +280,9 @@ CREATE TABLE collab_edges (
 
 | ID | 任务 | 分配 | 预估 | 说明 |
 |----|------|------|------|------|
-| **T1** | 项目脚手架 | Jessie | 30min | package.json, 目录结构, config/sources.json, PM2 配置, Caddy 路由 |
-| **T2** | SQLite 数据层 | Boot | 1h | db.js: 建表、CRUD 封装、初始化 |
-| **T3** | 前端骨架 + 深色主题 | Lucy | 1h | index.html, style.css, app.js: 布局框架 + 深色主题 + WS 连接骨架 |
+| **T1** | 项目脚手架 | Lead | 30min | package.json, 目录结构, config/sources.json, PM2 配置, Caddy 路由 |
+| **T2** | SQLite 数据层 | Agent-1 | 1h | db.js: 建表、CRUD 封装、初始化 |
+| **T3** | 前端骨架 + 深色主题 | Agent-2 | 1h | index.html, style.css, app.js: 布局框架 + 深色主题 + WS 连接骨架 |
 
 ---
 
@@ -290,10 +290,10 @@ CREATE TABLE collab_edges (
 
 | ID | 任务 | 分配 | 预估 | 说明 |
 |----|------|------|------|------|
-| **T4** | ConnectFetcher | Boot | 1h | HxA Connect API 调用 + 缓存对比 + 变化检测 |
-| **T5** | GitLabFetcher | Boot | 1.5h | GitLab Issues/MRs/Events API + username 映射 + 缓存 |
-| **T6** | CollabAnalyzer | Jessie | 1.5h | 图论分析：Review/Issue/Project 边生成 + 权重计算 |
-| **T7** | WebSocket + 轮询引擎 | Jessie | 1h | WS server, 定时轮询调度, diff 检测, 推送 |
+| **T4** | ConnectFetcher | Agent-1 | 1h | HxA Connect API 调用 + 缓存对比 + 变化检测 |
+| **T5** | GitLabFetcher | Agent-1 | 1.5h | GitLab Issues/MRs/Events API + username 映射 + 缓存 |
+| **T6** | CollabAnalyzer | Lead | 1.5h | 图论分析：Review/Issue/Project 边生成 + 权重计算 |
+| **T7** | WebSocket + 轮询引擎 | Lead | 1h | WS server, 定时轮询调度, diff 检测, 推送 |
 
 ---
 
@@ -301,11 +301,11 @@ CREATE TABLE collab_edges (
 
 | ID | 任务 | 分配 | 预估 | 说明 |
 |----|------|------|------|------|
-| **T8** | Agent 卡片墙 | Lucy | 1.5h | card-wall.js: 卡片渲染、在线状态、排序、点击事件 |
-| **T9** | Agent 详情抽屉 | Lucy | 1.5h | detail-drawer.js: 侧边面板、当前/历史工作、统计、协作伙伴 |
-| **T10** | 协作关系力导向图 | Jessie | 2h | collab-graph.js + force-graph.js: Canvas 力导向图渲染、交互 |
-| **T11** | 任务看板 | Lucy | 1h | task-board.js: 三列看板、项目分组、卡片样式 |
-| **T12** | 工作时间线 | Lucy | 1h | timeline.js: 事件列表、协作高亮、GitLab 链接 |
+| **T8** | Agent 卡片墙 | Agent-2 | 1.5h | card-wall.js: 卡片渲染、在线状态、排序、点击事件 |
+| **T9** | Agent 详情抽屉 | Agent-2 | 1.5h | detail-drawer.js: 侧边面板、当前/历史工作、统计、协作伙伴 |
+| **T10** | 协作关系力导向图 | Lead | 2h | collab-graph.js + force-graph.js: Canvas 力导向图渲染、交互 |
+| **T11** | 任务看板 | Agent-2 | 1h | task-board.js: 三列看板、项目分组、卡片样式 |
+| **T12** | 工作时间线 | Agent-2 | 1h | timeline.js: 事件列表、协作高亮、GitLab 链接 |
 
 ---
 
@@ -335,9 +335,9 @@ T3 (前端骨架)──┘    T6 (协作分析)──┘                    T12 
 
 | Agent | 任务 | 总预估 |
 |-------|------|--------|
-| **Jessie** | T1 + T6 + T7 + T10 + 集成 | ~5.5h |
-| **Boot** | T2 + T4 + T5 | ~3.5h |
-| **Lucy** | T3 + T8 + T9 + T11 + T12 | ~6h |
+| **Lead** | T1 + T6 + T7 + T10 + 集成 | ~5.5h |
+| **Agent-1** | T2 + T4 + T5 | ~3.5h |
+| **Agent-2** | T3 + T8 + T9 + T11 + T12 | ~6h |
 
 ---
 
@@ -369,8 +369,8 @@ handle_path /hxa-dash/* {
 
 ### GitLab Webhook
 
-在 hxanet group 设置 Webhook：
-- URL: `https://jessie.coco.site/hxa-dash/webhook`
+在 my-org group 设置 Webhook：
+- URL: `https://dash.example.com/hxa-dash/webhook`
 - Events: Push, Issue, MR
 - Secret: 配置在 sources.json
 
